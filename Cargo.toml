@@ -127,6 +127,7 @@ jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", rev = "86cc1749d493288f5
 # Don't warn about these new lints on stable.
 renamed_and_removed_lints = "allow"
 unknown_lints = "allow"
+unused_qualifications = "warn"
 
 [workspace.lints.clippy]
 # Notice: this is an important lint in Ruffle as we have a lot of trivially

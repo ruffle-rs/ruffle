@@ -77,7 +77,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
             unlock!(Gc::write(context.gc(), self.0), MorphShapeData, shared)
                 .set(new_morph_shape.0.shared.get())
         } else {
-            tracing::warn!("PlaceObject: expected morph shape at character ID {}", id);
+            tracing::warn!("PlaceObject: expected morph shape at character ID {id}");
         }
         self.invalidate_cached_bitmap();
     }
@@ -610,7 +610,7 @@ fn lerp_gradient(start: &swf::Gradient, end: &swf::Gradient, a: f32, b: f32) -> 
         .records
         .iter()
         .zip(end.records.iter())
-        .map(|(start, end)| swf::GradientRecord {
+        .map(|(start, end)| GradientRecord {
             ratio: (f32::from(start.ratio) * a + f32::from(end.ratio) * b) as u8,
             color: lerp_color(start.color, end.color, a, b),
         })

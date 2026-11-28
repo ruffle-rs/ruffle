@@ -127,7 +127,7 @@ impl<'gc> Avm2Button<'gc> {
                         }),
                     },
                 ),
-                state: Cell::new(self::ButtonState::Up),
+                state: Cell::new(ButtonState::Up),
                 hit_area: Lock::new(None),
                 up_state: Lock::new(None),
                 over_state: Lock::new(None),
@@ -231,7 +231,7 @@ impl<'gc> Avm2Button<'gc> {
                         tracing::error!(
                             "Button ID {}: could not instantiate child ID {}",
                             shared.id,
-                            record.id,
+                            record.id
                         );
                     }
                 };

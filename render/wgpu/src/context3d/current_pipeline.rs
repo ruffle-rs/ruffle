@@ -67,9 +67,9 @@ const AGAL_NUM_FRAGMENT_CONSTANTS: u64 = 28;
 pub(super) const AGAL_FLOATS_PER_REGISTER: u64 = 4;
 
 const VERTEX_SHADER_UNIFORMS_BUFFER_SIZE: u64 =
-    AGAL_NUM_VERTEX_CONSTANTS * AGAL_FLOATS_PER_REGISTER * std::mem::size_of::<f32>() as u64;
+    AGAL_NUM_VERTEX_CONSTANTS * AGAL_FLOATS_PER_REGISTER * size_of::<f32>() as u64;
 const FRAGMENT_SHADER_UNIFORMS_BUFFER_SIZE: u64 =
-    AGAL_NUM_FRAGMENT_CONSTANTS * AGAL_FLOATS_PER_REGISTER * std::mem::size_of::<f32>() as u64;
+    AGAL_NUM_FRAGMENT_CONSTANTS * AGAL_FLOATS_PER_REGISTER * size_of::<f32>() as u64;
 
 // The flash Context3D API is similar to OpenGL - it has many methods
 // which modify the current state (`setVertexBufferAt`, `setCulling`, etc.)
@@ -442,20 +442,17 @@ impl CurrentPipeline {
         for (i, attr) in vertex_attributes.iter().enumerate() {
             if let Some(attr) = attr {
                 let (format, entry_size_bytes) = match attr.format {
-                    Context3DVertexBufferFormat::Float4 => (
-                        wgpu::VertexFormat::Float32x4,
-                        4 * std::mem::size_of::<f32>(),
-                    ),
-                    Context3DVertexBufferFormat::Float3 => (
-                        wgpu::VertexFormat::Float32x3,
-                        3 * std::mem::size_of::<f32>(),
-                    ),
-                    Context3DVertexBufferFormat::Float2 => (
-                        wgpu::VertexFormat::Float32x2,
-                        2 * std::mem::size_of::<f32>(),
-                    ),
+                    Context3DVertexBufferFormat::Float4 => {
+                        (wgpu::VertexFormat::Float32x4, 4 * size_of::<f32>())
+                    }
+                    Context3DVertexBufferFormat::Float3 => {
+                        (wgpu::VertexFormat::Float32x3, 3 * size_of::<f32>())
+                    }
+                    Context3DVertexBufferFormat::Float2 => {
+                        (wgpu::VertexFormat::Float32x2, 2 * size_of::<f32>())
+                    }
                     Context3DVertexBufferFormat::Float1 => {
-                        (wgpu::VertexFormat::Float32, std::mem::size_of::<f32>())
+                        (wgpu::VertexFormat::Float32, size_of::<f32>())
                     }
                     // AGAL shaders always work with floating-point values, so
                     // we use Unorm8x4 to convert the bytes to floats in the range
@@ -611,8 +608,8 @@ impl CurrentPipeline {
     pub(crate) fn update_sampler_state_at(
         &mut self,
         sampler: usize,
-        wrap: ruffle_render::backend::Context3DWrapMode,
-        filter: ruffle_render::backend::Context3DTextureFilter,
+        wrap: Context3DWrapMode,
+        filter: Context3DTextureFilter,
     ) {
         let sampler_config = SamplerConfig {
             wrapping: match wrap {

@@ -86,9 +86,7 @@ impl Avm1ObjectWindow {
             .show(ui, |ui| {
                 let mut keys = object.get_keys(activation, true);
                 keys.sort();
-                ui.add(
-                    egui::TextEdit::singleline(&mut self.key_filter_string).hint_text("🔍 Filter"),
-                );
+                ui.add(TextEdit::singleline(&mut self.key_filter_string).hint_text("🔍 Filter"));
                 ui.end_row();
                 keys.retain(|key| {
                     self.key_filter_string.is_empty()
@@ -188,8 +186,7 @@ impl Avm1ObjectWindow {
             .is_some_and(|edit_key| *edit_key == key.as_wstr())
         {
             ui.horizontal(|ui| {
-                let re = ui
-                    .add(egui::TextEdit::singleline(&mut self.value_edit_buf).desired_width(96.0));
+                let re = ui.add(TextEdit::singleline(&mut self.value_edit_buf).desired_width(96.0));
                 if self.focus_text_edit {
                     re.request_focus();
                     self.focus_text_edit = false;
@@ -273,7 +270,7 @@ fn show_value_type_combo_box<'gc>(
     mutation: &Mutation<'gc>,
 ) -> Option<Value<'gc>> {
     let mut new = None;
-    egui::ComboBox::new(egui::Id::new("value_combo").with(key), "Type")
+    egui::ComboBox::new(Id::new("value_combo").with(key), "Type")
         .selected_text(value_label(value))
         .show_ui(ui, |ui| {
             if ui
@@ -342,7 +339,7 @@ trait UiExt {
     fn cancel_button(&mut self) -> egui::Response;
 }
 
-impl UiExt for egui::Ui {
+impl UiExt for Ui {
     fn edit_button(&mut self) -> egui::Response {
         self.button(PENCIL_ICON).on_hover_text("Edit")
     }

@@ -1058,7 +1058,7 @@ impl RuffleHandle {
     /// Runs the given function on this instance's `Player`.
     fn with_core<F, O>(self, f: F) -> Result<O, RuffleInstanceError>
     where
-        F: FnOnce(&ruffle_core::Player) -> O,
+        F: FnOnce(&Player) -> O,
     {
         let ret = INSTANCES
             .try_with(|instances| {
@@ -1090,7 +1090,7 @@ impl RuffleHandle {
     /// Runs the given function on this instance's `Player`.
     fn with_core_mut<F, O>(self, f: F) -> Result<O, RuffleInstanceError>
     where
-        F: FnOnce(&mut ruffle_core::Player) -> O,
+        F: FnOnce(&mut Player) -> O,
     {
         let ret = INSTANCES
             .try_with(|instances| {
@@ -1280,7 +1280,7 @@ impl RuffleInstance {
     #[expect(dead_code)]
     fn with_core<F, O>(&self, f: F) -> Result<O, RuffleInstanceError>
     where
-        F: FnOnce(&ruffle_core::Player) -> O,
+        F: FnOnce(&Player) -> O,
     {
         let ret = self
             .core
@@ -1295,7 +1295,7 @@ impl RuffleInstance {
 
     fn with_core_mut<F, O>(&self, f: F) -> Result<O, RuffleInstanceError>
     where
-        F: FnOnce(&mut ruffle_core::Player) -> O,
+        F: FnOnce(&mut Player) -> O,
     {
         let ret = self
             .core

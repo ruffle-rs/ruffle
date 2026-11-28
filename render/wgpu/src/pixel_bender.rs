@@ -31,7 +31,7 @@ use crate::{
 pub struct PixelBenderWgpuShader {
     bind_group_layout: wgpu::BindGroupLayout,
     pipeline_layout: PipelineLayout,
-    pipelines: RefCell<HashMap<(u32, wgpu::TextureFormat), RenderPipeline>>,
+    pipelines: RefCell<HashMap<(u32, TextureFormat), RenderPipeline>>,
     vertex_shader: wgpu::ShaderModule,
     fragment_shader: wgpu::ShaderModule,
     shader: PixelBenderShader,
@@ -50,7 +50,7 @@ impl PixelBenderWgpuShader {
         descriptors: &Descriptors,
         samples: u32,
         format: TextureFormat,
-    ) -> wgpu::RenderPipeline {
+    ) -> RenderPipeline {
         self.pipelines
             .borrow_mut()
             .entry((samples, format))
@@ -268,12 +268,12 @@ impl PixelBenderWgpuShader {
 /// texture. We handle this by manually inserting padding to keep the pixels
 /// at the correct positions. This isn't ideal, but allows us to keep the naga code generation
 /// simple.
-pub(super) fn temporary_texture_format_for_channels(channels: u32) -> wgpu::TextureFormat {
+pub(super) fn temporary_texture_format_for_channels(channels: u32) -> TextureFormat {
     match channels {
-        1 => wgpu::TextureFormat::R32Float,
-        2 => wgpu::TextureFormat::Rg32Float,
-        3 => wgpu::TextureFormat::Rgba32Float,
-        4 => wgpu::TextureFormat::Rgba32Float,
+        1 => TextureFormat::R32Float,
+        2 => TextureFormat::Rg32Float,
+        3 => TextureFormat::Rgba32Float,
+        4 => TextureFormat::Rgba32Float,
         _ => panic!("Unsupported number of channels: {channels}"),
     }
 }
@@ -298,8 +298,7 @@ fn image_input_as_texture<'a>(
                 depth_or_array_layers: 1,
             };
 
-            let texture_format =
-                crate::pixel_bender::temporary_texture_format_for_channels(data.channel_count());
+            let texture_format = temporary_texture_format_for_channels(data.channel_count());
             let padded_data = data.padded_data();
 
             let padded_bytes = bytemuck::cast_slice::<f32, u8>(padded_data.as_ref());
@@ -315,7 +314,7 @@ fn image_input_as_texture<'a>(
                 view_formats: &[texture_format],
             });
             descriptors.queue.write_texture(
-                wgpu::TexelCopyTextureInfo {
+                TexelCopyTextureInfo {
                     texture: &fresh_texture,
                     mip_level: 0,
                     origin: wgpu::Origin3d::ZERO,
@@ -402,7 +401,7 @@ pub(super) fn run_pixelbender_shader_impl(
             resource: BindingResource::Buffer(wgpu::BufferBinding {
                 buffer: &compiled_shader.zeroed_out_of_range_mode,
                 offset: 0,
-                size: Some(NonZeroU64::new(std::mem::size_of::<f32>() as u64 * 4).unwrap()),
+                size: Some(NonZeroU64::new(size_of::<f32>() as u64 * 4).unwrap()),
             }),
         },
     ];
@@ -411,7 +410,7 @@ pub(super) fn run_pixelbender_shader_impl(
         render_command_encoder,
         &compiled_shader.zeroed_out_of_range_mode,
         0,
-        NonZeroU64::new(std::mem::size_of::<f32>() as u64 * 4).unwrap(),
+        NonZeroU64::new(size_of::<f32>() as u64 * 4).unwrap(),
     );
 
     // This would ideally be a single f32, but web requires at least 16 bytes
@@ -460,10 +459,10 @@ pub(super) fn run_pixelbender_shader_impl(
                             mip_level_count: 1,
                             sample_count: 1,
                             dimension: wgpu::TextureDimension::D2,
-                            format: wgpu::TextureFormat::Rgba8Unorm,
+                            format: TextureFormat::Rgba8Unorm,
                             usage: wgpu::TextureUsages::COPY_DST
                                 | wgpu::TextureUsages::TEXTURE_BINDING,
-                            view_formats: &[wgpu::TextureFormat::Rgba8Unorm],
+                            view_formats: &[TextureFormat::Rgba8Unorm],
                         });
                         render_command_encoder.copy_texture_to_texture(
                             TexelCopyTextureInfo {

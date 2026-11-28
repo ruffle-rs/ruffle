@@ -621,8 +621,8 @@ fn try_wgpu_backend(backend: wgpu::Backends, window: Arc<Window>) -> Option<wgpu
 fn load_system_fonts(
     font_database: &Database,
     locale: unic_langid::LanguageIdentifier,
-) -> egui::FontDefinitions {
-    let mut fd: FontDefinitions = egui::FontDefinitions::default();
+) -> FontDefinitions {
+    let mut fd: FontDefinitions = FontDefinitions::default();
 
     let lang = locale.language.as_str();
     let is_ja = lang == "ja";
@@ -780,11 +780,11 @@ fn load_system_font(
             // This is acceptable, as we're doing it only once.
             let data = Box::leak(Box::new(data));
 
-            egui::FontData::from_static(data)
+            FontData::from_static(data)
         }
         Source::Binary(bin) => {
             let data = bin.as_ref().as_ref().to_vec();
-            egui::FontData::from_owned(data)
+            FontData::from_owned(data)
         }
     };
     fontdata.index = index;

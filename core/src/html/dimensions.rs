@@ -267,7 +267,7 @@ where
 
 impl<T> BoxBounds<T>
 where
-    T: Copy + std::cmp::PartialOrd,
+    T: Copy + PartialOrd,
 {
     pub fn contains(&self, local_position: Position<T>) -> bool {
         local_position.x >= self.offset_x

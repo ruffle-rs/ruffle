@@ -83,8 +83,8 @@ impl RuffleGui {
     /// Renders all of the main Ruffle UI, including the main menu and context menus.
     fn update(
         &mut self,
-        egui_ctx: &egui::Context,
-        egui_ui: &mut egui::Ui,
+        egui_ctx: &Context,
+        egui_ui: &mut Ui,
         show_menu: bool,
         mut player: Option<&mut Player>,
         menu_height_offset: f64,

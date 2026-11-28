@@ -156,7 +156,7 @@ impl<R: Read> Iterator for AdpcmDecoder<R> {
     }
 }
 
-impl<R: std::io::Read + Send + Sync> Decoder for AdpcmDecoder<R> {
+impl<R: Read + Send + Sync> Decoder for AdpcmDecoder<R> {
     #[inline]
     fn num_channels(&self) -> u8 {
         self.channels.len() as u8

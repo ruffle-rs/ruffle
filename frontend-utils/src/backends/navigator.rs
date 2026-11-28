@@ -30,13 +30,9 @@ use url::{ParseError, Url};
 pub trait NavigatorInterface: Clone + Send + 'static {
     fn navigate_to_website(&self, url: Url);
 
-    fn open_file(&self, path: &Path) -> impl std::future::Future<Output = io::Result<File>> + Send;
+    fn open_file(&self, path: &Path) -> impl Future<Output = io::Result<File>> + Send;
 
-    fn confirm_socket(
-        &self,
-        host: &str,
-        port: u16,
-    ) -> impl std::future::Future<Output = bool> + Send;
+    fn confirm_socket(&self, host: &str, port: u16) -> impl Future<Output = bool> + Send;
 }
 
 pub trait FutureSpawner<Err> {
@@ -98,7 +94,7 @@ impl<F: FutureSpawner<Error>, I: NavigatorInterface> ExternalNavigatorBackend<F,
         if let Some(cookie) = cookie {
             let cookie_jar = cookie::Jar::default();
             cookie_jar.add_cookie_str(&cookie, &base_url);
-            let cookie_store = std::sync::Arc::new(cookie_jar);
+            let cookie_store = Arc::new(cookie_jar);
             builder = builder.cookie_provider(cookie_store)
         }
 
@@ -176,9 +172,7 @@ impl<F: FutureSpawner<Error> + 'static, I: NavigatorInterface> NavigatorBackend
         };
 
         if modified_url.scheme() == "javascript" {
-            tracing::warn!(
-                "SWF tried to run a script on desktop, but javascript calls are not allowed"
-            );
+            warn!("SWF tried to run a script on desktop, but javascript calls are not allowed");
             return;
         }
 
@@ -317,7 +311,7 @@ impl<F: FutureSpawner<Error> + 'static, I: NavigatorInterface> NavigatorBackend
             sender
                 .send(action)
                 .await
-                .inspect_err(|err| tracing::warn!("Failed to send SocketAction: {}", err))
+                .inspect_err(|err| warn!("Failed to send SocketAction: {}", err))
                 .is_ok()
         }
 
@@ -334,9 +328,7 @@ impl<F: FutureSpawner<Error> + 'static, I: NavigatorInterface> NavigatorBackend
                     let action = SocketAction::Connect(handle, ConnectionState::Failed);
                     let _ = send_action(&sender, action).await;
 
-                    tracing::warn!(
-                        "SWF tried to open a socket, but opening a socket is not allowed"
-                    );
+                    warn!("SWF tried to open a socket, but opening a socket is not allowed");
 
                     return;
                 }
@@ -463,7 +455,7 @@ impl<F: FutureSpawner<Error> + 'static, I: NavigatorInterface> NavigatorBackend
             }
 
             if let Err(e) = stream.shutdown().await {
-                tracing::warn!("Failed to shutdown write half of TcpStream: {e}");
+                warn!("Failed to shutdown write half of TcpStream: {e}");
             }
         });
 

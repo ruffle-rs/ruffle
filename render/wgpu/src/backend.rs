@@ -175,7 +175,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
 }
 
 #[cfg(not(target_family = "wasm"))]
-impl WgpuRenderBackend<crate::target::TextureTarget> {
+impl WgpuRenderBackend<TextureTarget> {
     pub fn for_offscreen(
         size: (u32, u32),
         backend: wgpu::Backends,
@@ -195,7 +195,7 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
             power_preference,
         ))?;
         let descriptors = Descriptors::new(instance, adapter, device, queue);
-        let target = crate::target::TextureTarget::new(&descriptors.device, size)?;
+        let target = TextureTarget::new(&descriptors.device, size)?;
         Self::new(Arc::new(descriptors), target)
     }
 
@@ -1096,12 +1096,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                         if buffer_width as usize != width * out_stride {
                             let mut new_pixels = Vec::new();
                             for row in raw_pixels.chunks(buffer_width as usize) {
-                                let actual_row = &row[0..(width * std::mem::size_of::<[f32; 4]>())];
+                                let actual_row = &row[0..(width * size_of::<[f32; 4]>())];
 
-                                for pixel in actual_row
-                                    .as_chunks::<{ std::mem::size_of::<[f32; 4]>() }>()
-                                    .0
-                                {
+                                for pixel in actual_row.as_chunks::<{ size_of::<[f32; 4]>() }>().0 {
                                     new_pixels.extend_from_slice(&pixel[0..out_stride]);
                                 }
                             }

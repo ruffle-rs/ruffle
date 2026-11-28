@@ -87,7 +87,7 @@ impl WStr {
         };
 
         if len > WStr::MAX_LEN {
-            super::panic_on_invalid_length(len);
+            panic_on_invalid_length(len);
         }
 
         // SAFETY: we validated the slice length above, and the shared borrow is valid for 'a.
@@ -104,7 +104,7 @@ impl WStr {
         };
 
         if len > WStr::MAX_LEN {
-            super::panic_on_invalid_length(len);
+            panic_on_invalid_length(len);
         }
 
         // SAFETY: we validated the slice length above, and the mutable borrow is valid for 'a.
@@ -137,7 +137,7 @@ impl WStr {
 
     /// Provides mutable access to the underlying buffer.
     #[inline]
-    pub fn units_mut(&mut self) -> super::Units<&mut [u8], &mut [u16]> {
+    pub fn units_mut(&mut self) -> Units<&mut [u8], &mut [u16]> {
         // SAFETY: `self` is a valid `WStr` borrowed mutably, so we can mut. deref. the buffers.
         unsafe {
             match ptr::units_mut(self) {
@@ -269,7 +269,7 @@ impl WStr {
     /// Iterates over the unicode characters of `self`.
     #[inline]
     pub fn chars(&self) -> super::ops::Chars<'_> {
-        core::char::decode_utf16(super::ops::str_iter(self))
+        char::decode_utf16(super::ops::str_iter(self))
     }
 
     /// Iterates over the unicode characters of `self`, together with their indices.
@@ -536,23 +536,23 @@ impl AsRef<WStr> for WStr {
     }
 }
 
-impl core::cmp::PartialEq for WStr {
+impl PartialEq for WStr {
     #[inline]
     fn eq(&self, other: &WStr) -> bool {
         super::ops::str_eq(self, other)
     }
 }
 
-impl core::cmp::Eq for WStr {}
+impl Eq for WStr {}
 
-impl core::cmp::Ord for WStr {
+impl Ord for WStr {
     #[inline]
     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         super::ops::str_cmp(self, other)
     }
 }
 
-impl core::cmp::PartialOrd for WStr {
+impl PartialOrd for WStr {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         Some(self.cmp(other))
@@ -580,7 +580,7 @@ impl core::fmt::Debug for WStr {
     }
 }
 
-impl<'a> core::iter::IntoIterator for &'a WStr {
+impl<'a> IntoIterator for &'a WStr {
     type Item = u16;
     type IntoIter = super::Iter<'a>;
 

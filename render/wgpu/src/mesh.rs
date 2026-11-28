@@ -216,7 +216,7 @@ impl PendingDrawType {
                                     buffer: uniform_buffer,
                                     offset: common.buffer_offset,
                                     size: wgpu::BufferSize::new(
-                                        std::mem::size_of::<GradientUniforms>() as u64,
+                                        size_of::<GradientUniforms>() as u64
                                     ),
                                 }),
                             },

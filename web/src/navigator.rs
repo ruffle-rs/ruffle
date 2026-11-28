@@ -74,7 +74,7 @@ impl WebNavigatorBackend {
         socket_proxies: Vec<SocketProxy>,
         credential_allow_list: Vec<String>,
     ) -> Self {
-        let window = web_sys::window().expect("window()");
+        let window = window().expect("window()");
 
         // Upgrade to HTTPS takes effect if the current page is hosted on HTTPS.
         let upgrade_to_https =
@@ -384,7 +384,7 @@ impl NavigatorBackend for WebNavigatorBackend {
                     })?;
             }
 
-            let window = web_sys::window().expect("window()");
+            let window = window().expect("window()");
             let fetchval = JsFuture::from(window.fetch_with_request(&web_request))
                 .await
                 .map_err(|_| {
@@ -466,7 +466,7 @@ impl NavigatorBackend for WebNavigatorBackend {
                 // outside of the 'requestAnimationFrame' callback, which will allow us to lock
                 // the Player.
                 let promise = Promise::new(&mut |resolve, _reject| {
-                    web_sys::window()
+                    window()
                         .expect("window")
                         .set_timeout_with_callback(&resolve)
                         .expect("Failed to call setTimeout with dummy promise");

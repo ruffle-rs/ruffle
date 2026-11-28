@@ -83,7 +83,7 @@ impl fmt::Display for Error {
 }
 
 impl error::Error for Error {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match self {
             Self::Avm1ParseError(e) => e.source(),
             Self::AbcParseError(e) => e.source(),
@@ -130,8 +130,8 @@ impl fmt::Display for Avm1ParseError {
     }
 }
 
-impl std::error::Error for Avm1ParseError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+impl error::Error for Avm1ParseError {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         Some(&self.source)
     }
 }
@@ -212,7 +212,7 @@ impl fmt::Display for AbcParseError {
 }
 
 impl error::Error for AbcParseError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match self {
             AbcParseError::UnexpectedEof(e) => Some(e),
             _ => None,

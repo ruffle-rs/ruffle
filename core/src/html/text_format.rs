@@ -74,7 +74,7 @@ fn process_html_entity(src: &WStr) -> Option<WString> {
                         + numeral_start_index;
                     let digits = &numeric_parse_start[..end]; // using numeric_parse_start to include any potential sign
                     if let Ok(n) = Wrapping::<u16>::from_wstr_radix(digits, radix) {
-                        if let Some(c) = std::char::from_u32(n.0 as u32) {
+                        if let Some(c) = char::from_u32(n.0 as u32) {
                             result_str.push_char(c);
                         }
                     } else {

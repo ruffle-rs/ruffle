@@ -18,8 +18,8 @@ pub const VERTEX_SHADER_ENTRYPOINT: &str = "filter__vertex_entry_point";
 pub const FRAGMENT_SHADER_ENTRYPOINT: &str = "main";
 
 pub struct NagaModules {
-    pub vertex: naga::Module,
-    pub fragment: naga::Module,
+    pub vertex: Module,
+    pub fragment: Module,
 
     pub float_parameters_buffer_size: u64,
     pub int_parameters_buffer_size: u64,
@@ -135,7 +135,7 @@ impl ShaderBuilder<'_> {
             Type {
                 name: None,
                 inner: TypeInner::Vector {
-                    size: naga::VectorSize::Bi,
+                    size: VectorSize::Bi,
                     scalar: naga::Scalar::F32,
                 },
             },
@@ -146,8 +146,7 @@ impl ShaderBuilder<'_> {
             Type {
                 name: None,
                 inner: TypeInner::Vector {
-                    size: naga::VectorSize::Quad,
-
+                    size: VectorSize::Quad,
                     scalar: naga::Scalar::F32,
                 },
             },
@@ -158,7 +157,7 @@ impl ShaderBuilder<'_> {
             Type {
                 name: None,
                 inner: TypeInner::Vector {
-                    size: naga::VectorSize::Quad,
+                    size: VectorSize::Quad,
                     scalar: naga::Scalar::I32,
                 },
             },
@@ -169,8 +168,8 @@ impl ShaderBuilder<'_> {
             Type {
                 name: None,
                 inner: TypeInner::Matrix {
-                    columns: naga::VectorSize::Bi,
-                    rows: naga::VectorSize::Bi,
+                    columns: VectorSize::Bi,
+                    rows: VectorSize::Bi,
                     scalar: naga::Scalar::F32,
                 },
             },
@@ -181,8 +180,8 @@ impl ShaderBuilder<'_> {
             Type {
                 name: None,
                 inner: TypeInner::Matrix {
-                    columns: naga::VectorSize::Tri,
-                    rows: naga::VectorSize::Tri,
+                    columns: VectorSize::Tri,
+                    rows: VectorSize::Tri,
                     scalar: naga::Scalar::F32,
                 },
             },
@@ -193,8 +192,8 @@ impl ShaderBuilder<'_> {
             Type {
                 name: None,
                 inner: TypeInner::Matrix {
-                    columns: naga::VectorSize::Quad,
-                    rows: naga::VectorSize::Quad,
+                    columns: VectorSize::Quad,
+                    rows: VectorSize::Quad,
                     scalar: naga::Scalar::F32,
                 },
             },
@@ -259,8 +258,8 @@ impl ShaderBuilder<'_> {
             let var = module.global_variables.append(
                 GlobalVariable {
                     name: Some(format!("sampler{i}")),
-                    space: naga::AddressSpace::Handle,
-                    binding: Some(naga::ResourceBinding {
+                    space: AddressSpace::Handle,
+                    binding: Some(ResourceBinding {
                         group: 0,
                         binding: TEXTURE_SAMPLER_START_BIND_INDEX + i as u32,
                     }),
@@ -350,8 +349,8 @@ impl ShaderBuilder<'_> {
         let zeroed_out_of_range_mode_global = builder.module.global_variables.append(
             GlobalVariable {
                 name: Some("zeroed_out_of_range_mode".to_string()),
-                space: naga::AddressSpace::Uniform,
-                binding: Some(naga::ResourceBinding {
+                space: AddressSpace::Uniform,
+                binding: Some(ResourceBinding {
                     group: 0,
                     binding: ZEROED_OUT_OF_RANGE_MODE_INDEX,
                 }),
@@ -571,8 +570,8 @@ impl ShaderBuilder<'_> {
         let shader_float_parameters = self.module.global_variables.append(
             GlobalVariable {
                 name: Some("shader_float_parameters".to_string()),
-                space: naga::AddressSpace::Uniform,
-                binding: Some(naga::ResourceBinding {
+                space: AddressSpace::Uniform,
+                binding: Some(ResourceBinding {
                     group: 0,
                     binding: SHADER_FLOAT_PARAMETERS_INDEX,
                 }),
@@ -582,7 +581,7 @@ impl ShaderBuilder<'_> {
                         inner: TypeInner::Array {
                             base: self.vec4f,
                             size: ArraySize::Constant(NonZeroU32::new(num_vec4fs.max(1)).unwrap()),
-                            stride: std::mem::size_of::<[f32; 4]>() as u32,
+                            stride: size_of::<[f32; 4]>() as u32,
                         },
                     },
                     Span::UNDEFINED,
@@ -596,8 +595,8 @@ impl ShaderBuilder<'_> {
         let shader_int_parameters = self.module.global_variables.append(
             GlobalVariable {
                 name: Some("shader_int_parameters".to_string()),
-                space: naga::AddressSpace::Uniform,
-                binding: Some(naga::ResourceBinding {
+                space: AddressSpace::Uniform,
+                binding: Some(ResourceBinding {
                     group: 0,
                     binding: SHADER_INT_PARAMETERS_INDEX,
                 }),
@@ -607,7 +606,7 @@ impl ShaderBuilder<'_> {
                         inner: TypeInner::Array {
                             base: self.vec4i,
                             size: ArraySize::Constant(NonZeroU32::new(num_vec4is.max(1)).unwrap()),
-                            stride: std::mem::size_of::<[i32; 4]>() as u32,
+                            stride: size_of::<[i32; 4]>() as u32,
                         },
                     },
                     Span::UNDEFINED,
@@ -664,8 +663,8 @@ impl ShaderBuilder<'_> {
         }
 
         (
-            num_vec4fs.max(1) as u64 * std::mem::size_of::<[f32; 4]>() as u64,
-            num_vec4is.max(1) as u64 * std::mem::size_of::<[i32; 4]>() as u64,
+            num_vec4fs.max(1) as u64 * size_of::<[f32; 4]>() as u64,
+            num_vec4is.max(1) as u64 * size_of::<[i32; 4]>() as u64,
         )
     }
 
@@ -890,7 +889,7 @@ impl ShaderBuilder<'_> {
                         Opcode::Mov => src,
                         Opcode::Rcp => {
                             let vec_one = self.evaluate_expr(Expression::Splat {
-                                size: naga::VectorSize::Quad,
+                                size: VectorSize::Quad,
                                 value: self.onef32,
                             });
 
@@ -1025,7 +1024,7 @@ impl ShaderBuilder<'_> {
                                 arg3: None,
                             });
                             self.evaluate_expr(Expression::Splat {
-                                size: naga::VectorSize::Quad,
+                                size: VectorSize::Quad,
                                 value: length,
                             })
                         }
@@ -1265,7 +1264,7 @@ impl ShaderBuilder<'_> {
                             arg3: None,
                         }),
                         Opcode::IntToFloat => self.evaluate_expr(Expression::As {
-                            kind: crate::ScalarKind::Float,
+                            kind: ScalarKind::Float,
                             expr: src,
                             convert: Some(4),
                         }),
@@ -1341,7 +1340,7 @@ impl ShaderBuilder<'_> {
                 | Operation::SampleNearest { dst, src, tf } => {
                     let mut coord = self.load_src_register(src);
                     coord = self.evaluate_expr(Expression::Swizzle {
-                        size: naga::VectorSize::Bi,
+                        size: VectorSize::Bi,
                         vector: coord,
                         // Only the first two components matter
                         pattern: [
@@ -1358,7 +1357,7 @@ impl ShaderBuilder<'_> {
                     });
 
                     let size_vec_float = self.evaluate_expr(Expression::As {
-                        kind: crate::ScalarKind::Float,
+                        kind: ScalarKind::Float,
                         expr: size_vec,
                         convert: Some(4),
                     });
@@ -1393,7 +1392,7 @@ impl ShaderBuilder<'_> {
                         .expressions
                         .append(Expression::Literal(Literal::F32(*val)), Span::UNDEFINED);
                     let const_vec = self.evaluate_expr(Expression::Splat {
-                        size: naga::VectorSize::Quad,
+                        size: VectorSize::Quad,
                         value: val_expr,
                     });
                     self.emit_dest_store(const_vec, dst);
@@ -1404,7 +1403,7 @@ impl ShaderBuilder<'_> {
                         .expressions
                         .append(Expression::Literal(Literal::I32(*val)), Span::UNDEFINED);
                     let const_vec = self.evaluate_expr(Expression::Splat {
-                        size: naga::VectorSize::Quad,
+                        size: VectorSize::Quad,
                         value: val_expr,
                     });
                     self.emit_dest_store(const_vec, dst);
@@ -1908,7 +1907,7 @@ impl ShaderBuilder<'_> {
 }
 
 #[expect(dead_code)]
-fn to_wgsl(module: &naga::Module) -> String {
+fn to_wgsl(module: &Module) -> String {
     let mut out = String::new();
 
     let mut validator = Validator::new(

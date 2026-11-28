@@ -401,7 +401,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                         streamdef.deblocking,
                     );
                     if let Err(err) = stream {
-                        tracing::error!("Got error when post-instantiating video: {err}",);
+                        tracing::error!("Got error when post-instantiating video: {err}");
                         return;
                     }
 
@@ -424,7 +424,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                             }
                             Ok(_) => {}
                             Err(e) => {
-                                tracing::error!("Got error when pre-loading video frame: {}", e);
+                                tracing::error!("Got error when pre-loading video frame: {e}")
                             }
                         }
                     }

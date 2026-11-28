@@ -261,7 +261,7 @@ pub fn derive_has_prefix_field(input: TokenStream) -> TokenStream {
     }
 
     let Some(first_field) = ({
-        if let syn::Data::Struct(data) = &input.data {
+        if let Data::Struct(data) = &input.data {
             data.fields
                 .iter()
                 .next()
@@ -312,7 +312,7 @@ pub fn derive_has_prefix_field(input: TokenStream) -> TokenStream {
 pub fn define_common_strings(input: TokenStream) -> TokenStream {
     struct Input {
         ascii_ident: syn::Ident,
-        strings: Vec<syn::LitStr>,
+        strings: Vec<LitStr>,
     }
 
     impl Parse for Input {
@@ -421,7 +421,7 @@ fn atom_internal(
     impl Parse for Input {
         fn parse(input: ParseStream) -> syn::Result<Self> {
             let mut context = None;
-            if !input.peek(syn::LitStr) {
+            if !input.peek(LitStr) {
                 context = Some(input.parse()?);
                 input.parse::<syn::token::Comma>()?;
             }
