@@ -1,0 +1,3 @@
+transform(clip): [object Object], color: 16711680, bold: true
+setStyle("p", clip): getStyle: null, typeof: null
+getStyleNames: p

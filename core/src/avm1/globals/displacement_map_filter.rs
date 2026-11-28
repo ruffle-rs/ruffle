@@ -92,7 +92,7 @@ impl<'gc> DisplacementMapFilter<'gc> {
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
-        if let Some(Value::Object(object)) = value
+        if let Some(object) = value.and_then(|v| v.as_object_ignoring_clip())
             && let NativeObject::BitmapData(bitmap_data) = object.native()
         {
             unlock!(
@@ -126,7 +126,7 @@ impl<'gc> DisplacementMapFilter<'gc> {
             }
         }
 
-        if let Value::Object(object) = value {
+        if let Some(object) = value.as_object_resolving_clip(activation) {
             let x = object
                 .get_local_stored(istr!("x"), activation)
                 .map(|x| x.coerce_to_f64(activation));

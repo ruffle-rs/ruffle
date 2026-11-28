@@ -218,7 +218,7 @@ impl<'gc> GradientFilter<'gc> {
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
-        if let Some(Value::Object(object)) = value {
+        if let Some(object) = value.and_then(|v| v.as_object_resolving_clip(activation)) {
             // Note that unlike `colors` and `ratios`, setting `alphas` doesn't change
             // the number of colors in the gradient.
             let num_colors = self.0.num_colors.get();
@@ -257,7 +257,7 @@ impl<'gc> GradientFilter<'gc> {
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
-        if let Some(Value::Object(object)) = value {
+        if let Some(object) = value.and_then(|v| v.as_object_resolving_clip(activation)) {
             let num_colors = usize::try_from(object.length(activation)?).unwrap_or_default();
 
             // Modifying `ratios` can only reduce the number of colors, never increase it.

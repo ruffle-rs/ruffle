@@ -1,0 +1,8 @@
+localToGlobal: older.x: 101, newer.x: 2
+Function.apply: older
+ColorMatrixFilter: 1
+StyleSheet.transform: 1
+attachMovie: older
+Function.call: older
+setInterval: older
+Done

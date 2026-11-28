@@ -81,20 +81,21 @@ impl<'gc> ColorMatrixFilter<'gc> {
         // This implements FP 32 semantics.
         let mut matrix = [f32::NAN; 4 * 5];
 
-        match value {
+        let object = match value {
             None | Some(Value::Null | Value::Undefined) => return Ok(()),
-            Some(Value::Object(object)) => {
-                for (i, m) in matrix.iter_mut().enumerate() {
-                    let i = i as i32;
-                    let length = object.length(activation)?;
-                    if i < length {
-                        *m = object
-                            .get_element(activation, i)
-                            .coerce_to_f64(activation)? as f32;
-                    }
+            Some(value) => value.as_object_resolving_clip(activation),
+        };
+
+        if let Some(object) = object {
+            for (i, m) in matrix.iter_mut().enumerate() {
+                let i = i as i32;
+                let length = object.length(activation)?;
+                if i < length {
+                    *m = object
+                        .get_element(activation, i)
+                        .coerce_to_f64(activation)? as f32;
                 }
             }
-            _ => (),
         }
 
         self.0.matrix.set(matrix);

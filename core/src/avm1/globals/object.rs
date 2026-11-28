@@ -126,24 +126,18 @@ pub fn add_property<'gc>(
         let getter = args.get(1).unwrap_or(&Value::Undefined);
         let setter = args.get(2).unwrap_or(&Value::Undefined);
 
-        match getter {
-            Value::Object(get) if !name.is_empty() => {
-                if let Value::Object(set) = setter {
+        match getter.as_object_ignoring_clip() {
+            Some(get) if !name.is_empty() => {
+                if let Some(set) = setter.as_object_ignoring_clip() {
                     this.add_property_with_case(
                         activation,
                         name,
-                        get.to_owned(),
-                        Some(set.to_owned()),
+                        get,
+                        Some(set),
                         Attribute::empty(),
                     );
                 } else if let Value::Null = setter {
-                    this.add_property_with_case(
-                        activation,
-                        name,
-                        get.to_owned(),
-                        None,
-                        Attribute::READ_ONLY,
-                    );
+                    this.add_property_with_case(activation, name, get, None, Attribute::READ_ONLY);
                 } else {
                     return Ok(false.into());
                 }
@@ -234,9 +228,9 @@ pub fn register_class<'gc>(
         _ => return Ok(false.into()),
     };
 
-    let constructor = match constructor {
-        Value::Null | Value::Undefined => None,
-        Value::Object(obj) if obj.as_function().is_some() => Some(*obj),
+    let constructor = match (constructor, constructor.as_object_ignoring_clip()) {
+        (Value::Null | Value::Undefined, _) => None,
+        (_, Some(obj)) if obj.as_function().is_some() => Some(obj),
         _ => return Ok(false.into()),
     };
 

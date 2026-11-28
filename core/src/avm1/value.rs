@@ -370,10 +370,23 @@ impl<'gc> Value<'gc> {
 
     /// Convert `self` to an script object, if possible. Unlike `coerce_to_object`, this
     /// doesn't coerce primitives.
-    pub fn as_object(self, activation: &mut Activation<'_, 'gc>) -> Option<Object<'gc>> {
+    ///
+    /// Clip references are resolved to the clip they currently refer to.
+    pub fn as_object_resolving_clip(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Option<Object<'gc>> {
         match self {
             Value::Object(obj) => Some(obj),
             Value::MovieClip(mcr) => mcr.coerce_to_object(activation),
+            _ => None,
+        }
+    }
+
+    /// Returns the object if `self` is one, without resolving clip references.
+    pub fn as_object_ignoring_clip(self) -> Option<Object<'gc>> {
+        match self {
+            Value::Object(obj) => Some(obj),
             _ => None,
         }
     }
@@ -582,7 +595,7 @@ impl<'gc> Value<'gc> {
             if let Some(class) = class.coerce_to_object(activation)?
                 && let Some(p) = class.prototype(activation)
                 && let Some(p) = p.coerce_to_object(activation)?
-                && let Some(obj) = self.as_object(activation)
+                && let Some(obj) = self.as_object_resolving_clip(activation)
             {
                 return obj.is_instance_of(activation, p);
             }

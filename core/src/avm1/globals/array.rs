@@ -481,7 +481,7 @@ pub fn concat<'gc>(
         .chain(args)
         .enumerate()
         .try_for_each(|(index, value)| -> Result<(), Error<'gc>> {
-            if let Value::Object(object) = value {
+            if let Some(object) = value.as_object_ignoring_clip() {
                 match (object.native(), index) {
                     // When Array.prototype.concat is called directly with the first argument being an object,
                     // such as in the avm1/from_shumway/array test, the this value (i.e. index 0 in the iterator) will be NativeObject::None instead of NativeObject::Array
@@ -524,21 +524,23 @@ fn sort<'gc>(
     // 1) a.sort(options: Number = 0): Sort with the given options.
     // 2) a.sort(compare_fn: Object, options: Number = 0): Sort using the given compare function and options.
 
-    let (compare_fn, options) = match args {
-        [Value::Object(f), Value::Number(n), ..] => (
+    let compare_fn = args.get(0).and_then(|v| v.as_object_ignoring_clip());
+
+    let (compare_fn, options) = match (compare_fn, args) {
+        (Some(f), [_, Value::Number(n), ..]) => (
             Some(f),
             SortOptions::from_bits_truncate(f64_to_wrapping_i32(*n)),
         ),
-        [Value::Object(f), ..] => (Some(f), SortOptions::empty()),
-        [Value::Number(_), Value::Number(n), ..] | [Value::Number(n), ..] => (
+        (Some(f), _) => (Some(f), SortOptions::empty()),
+        (None, [Value::Number(_), Value::Number(n), ..] | [Value::Number(n), ..]) => (
             None,
             SortOptions::from_bits_truncate(f64_to_wrapping_i32(*n)),
         ),
-        [_, ..] => return Ok(Value::Undefined),
-        [] => (None, SortOptions::empty()),
+        (None, [_, ..]) => return Ok(Value::Undefined),
+        (None, []) => (None, SortOptions::empty()),
     };
 
-    let compare_fn = if let Some(compare_fn) = compare_fn {
+    let compare_fn = if let Some(compare_fn) = &compare_fn {
         sort_compare_custom(compare_fn)
     } else {
         Box::new(sort_compare)
@@ -555,8 +557,10 @@ fn sort_on<'gc>(
     // 1) a.sortOn(field_name: String, options: Number = 0): Sort by a field and with the given options.
     // 2) a.sortOn(field_names: Array, options: Array): Sort by fields in order of precedence and with the given options respectively.
 
-    let fields = match args.get(0) {
-        Some(Value::Object(field_names_array)) => {
+    let field_names_array = args.get(0).and_then(|v| v.as_object_ignoring_clip());
+
+    let fields = match (field_names_array, args.get(0)) {
+        (Some(field_names_array), _) => {
             if !field_names_array.is_native_array() {
                 // Non-Array fields.
                 // Fallback to standard sort.
@@ -587,8 +591,10 @@ fn sort_on<'gc>(
                 .collect();
             let mut fields = fields?;
 
-            match args.get(1) {
-                Some(Value::Object(options_array))
+            let options_array = args.get(1).and_then(|v| v.as_object_ignoring_clip());
+
+            match (options_array, args.get(1)) {
+                (Some(options_array), _)
                     if options_array.is_native_array()
                         && options_array.length(activation)? == length =>
                 {
@@ -601,7 +607,7 @@ fn sort_on<'gc>(
                         );
                     }
                 }
-                Some(options) if options.is_primitive() => {
+                (_, Some(options)) if options.is_primitive() => {
                     // Single options.
                     let options =
                         SortOptions::from_bits_truncate(options.coerce_to_i32(activation)?);
@@ -614,7 +620,7 @@ fn sort_on<'gc>(
 
             fields
         }
-        Some(field_name) => {
+        (None, Some(field_name)) => {
             // Single field.
             let field_name = field_name.coerce_to_string(activation)?;
 
@@ -625,7 +631,7 @@ fn sort_on<'gc>(
 
             vec![(field_name, options)]
         }
-        None => return Ok(Value::Undefined),
+        (None, None) => return Ok(Value::Undefined),
     };
 
     let (_, main_options) = fields[0];

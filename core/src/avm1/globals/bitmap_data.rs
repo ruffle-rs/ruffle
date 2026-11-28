@@ -1070,10 +1070,10 @@ fn palette_map<'gc>(
         .coerce_to_f64(activation)? as i32;
 
     let mut get_channel = |index: usize, shift: usize| -> Result<[u32; 256], Error<'gc>> {
-        let arg = args.get(index).unwrap_or(&Value::Null);
+        let arg = args.get(index).and_then(|v| v.as_object_ignoring_clip());
         let mut array = [0_u32; 256];
         for (i, item) in array.iter_mut().enumerate() {
-            *item = if let Value::Object(arg) = arg {
+            *item = if let Some(arg) = arg {
                 arg.get_element(activation, i as i32)
                     .coerce_to_u32(activation)?
             } else {

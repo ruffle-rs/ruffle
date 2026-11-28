@@ -53,17 +53,17 @@ pub fn add_callback<'gc>(
     }
 
     let name = args.get(0).unwrap().coerce_to_string(activation)?;
-    let this = args.get(1).unwrap().to_owned();
+    let this = *args.get(1).unwrap();
+    let this = this
+        .as_object_resolving_clip(activation)
+        .map_or(this, Value::from);
     let method = args.get(2).unwrap();
 
-    if let Value::Object(method) = method {
-        activation.context.external_interface.add_callback(
-            name.to_string(),
-            Callback::Avm1 {
-                this,
-                method: *method,
-            },
-        );
+    if let Some(method) = method.as_object_resolving_clip(activation) {
+        activation
+            .context
+            .external_interface
+            .add_callback(name.to_string(), Callback::Avm1 { this, method });
         Ok(true.into())
     } else {
         Ok(false.into())

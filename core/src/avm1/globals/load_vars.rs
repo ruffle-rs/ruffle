@@ -195,9 +195,8 @@ fn send_and_load<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let url_val = args.get(0).cloned().unwrap_or(Value::Undefined);
     let url = url_val.coerce_to_string(activation)?;
-    let target = match args.get(1) {
-        Some(&Value::Object(o)) => o,
-        _ => return Ok(false.into()),
+    let Some(target) = args.get(1).and_then(|v| v.as_object_ignoring_clip()) else {
+        return Ok(false.into());
     };
 
     let method_name = args
