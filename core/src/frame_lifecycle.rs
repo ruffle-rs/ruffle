@@ -16,6 +16,7 @@ use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
 use crate::loader::LoadManager;
 use crate::orphan_manager::OrphanManager;
+use std::mem;
 use tracing::instrument;
 
 /// Which phase of the frame we're currently in.
@@ -88,7 +89,12 @@ pub fn run_all_phases_avm2(context: &mut UpdateContext<'_>) {
         orphan.construct_frame(context);
     });
     stage.construct_frame(context);
+    construct_deferred_goto_frames(context);
     broadcast_frame_constructed(context);
+
+    // The frames of gotos run by `frameConstructed` handlers are constructed
+    // in the next frame.
+    context.deferred_goto_clips.clear();
 
     *context.frame_phase = FramePhase::FrameScripts;
     OrphanManager::each_orphan_obj(context, |orphan, context| {
@@ -111,6 +117,22 @@ pub fn run_all_phases_avm2(context: &mut UpdateContext<'_>) {
     context.orphan_manager.cleanup_dead_orphans(context.gc());
 
     *context.frame_phase = FramePhase::Idle;
+}
+
+/// Constructs the new frames of SWFv9 gotos that were deferred to the end of
+/// the construct phase.
+fn construct_deferred_goto_frames(context: &mut UpdateContext<'_>) {
+    loop {
+        let clips = mem::take(&mut context.deferred_goto_clips);
+
+        if clips.is_empty() {
+            break;
+        }
+
+        for clip in clips {
+            clip.construct_frame(context);
+        }
+    }
 }
 
 /// Like `run_all_phases_avm2`, but specialized for the "nested frame" triggered

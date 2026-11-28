@@ -952,9 +952,24 @@ impl<'gc> MovieClip<'gc> {
                 }
             }
         } else {
+            let phase = *context.frame_phase;
+            let old_frame = self.current_frame();
+
             // If we're not currently running a frame script, we can just perform
             // the goto right now.
-            self.goto_frame_now(context, goto_info)
+            self.goto_frame_now(context, goto_info);
+
+            // In SWFv9, the new frame of a goto run during the construct phase
+            // isn't constructed by the goto itself, but at the end of the
+            // construct phase.
+            let is_deferred = self.swf_version() <= 9
+                && self.movie().is_action_script_3()
+                && phase == FramePhase::Construct
+                && self.current_frame() != old_frame;
+
+            if is_deferred && !self.has_deferred_goto(context) {
+                context.deferred_goto_clips.push(self);
+            }
         }
     }
 
@@ -2536,6 +2551,15 @@ impl<'gc> MovieClip<'gc> {
         }
     }
 
+    /// Whether the new frame of a SWFv9 goto on this clip is yet to be
+    /// constructed.
+    fn has_deferred_goto(self, context: &UpdateContext<'gc>) -> bool {
+        context
+            .deferred_goto_clips
+            .iter()
+            .any(|clip| DisplayObject::ptr_eq(*clip, self))
+    }
+
     fn check_has_pending_script(self) {
         let has_pending_script = self.has_frame_script(self.0.current_frame.get());
         self.set_has_pending_script(has_pending_script);
@@ -2638,6 +2662,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 let running_construct_frame = self
                     .0
                     .contains_flag(MovieClipFlags::RUNNING_CONSTRUCT_FRAME);
+                let has_deferred_goto = self.has_deferred_goto(context);
+
                 for child in self.iter_render_list() {
                     // Under some conditions, we won't run `construct_frame` on
                     // a not-yet-constructed child
@@ -2656,6 +2682,12 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                         // However, if the child has already been constructed, we run
                         // `construct_frame` like normal.
                         if child.manual_frame_construct() {
+                            continue;
+                        }
+
+                        // The children placed by a deferred SWFv9 goto are
+                        // constructed once that goto's frame is.
+                        if has_deferred_goto {
                             continue;
                         }
                     }
