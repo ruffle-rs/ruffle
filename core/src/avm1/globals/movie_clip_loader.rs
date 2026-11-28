@@ -2,9 +2,10 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
+use crate::avm1::globals::object::define_listeners;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
-use crate::avm1::{ArrayBuilder, Object, Value};
+use crate::avm1::{Object, Value};
 use crate::backend::navigator::Request;
 use crate::display_object::TDisplayObject;
 use crate::loader::MovieLoaderVMData;
@@ -30,13 +31,8 @@ fn constructor<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let listeners = ArrayBuilder::new(activation).with([this.into()]);
-    this.define_value(
-        activation.gc(),
-        istr!("_listeners"),
-        Value::Object(listeners),
-        Attribute::DONT_ENUM,
-    );
+    define_listeners(activation, this, [this.into()], Attribute::DONT_ENUM);
+
     Ok(Value::Undefined)
 }
 
