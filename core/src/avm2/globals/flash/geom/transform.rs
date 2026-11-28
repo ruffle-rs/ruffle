@@ -399,3 +399,44 @@ pub fn get_relative_matrix_3d<'gc>(
 
     Ok(Matrix3DObject::new(activation.context, Matrix3D::IDENTITY).into())
 }
+
+pub fn get_concatenated_color_transform<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    let dobj = get_display_object(this);
+    let mut color_transform = dobj.base().color_transform();
+
+    if dobj.as_stage().is_none() {
+        let mut chain = Vec::new();
+        let mut node = dobj.parent();
+        let mut on_stage = false;
+        let mut hit_3d = false;
+        while let Some(obj) = node {
+            if obj.as_stage().is_some() {
+                on_stage = true;
+                break;
+            }
+            if !hit_3d {
+                if obj.base().has_matrix3d_stub() {
+                    hit_3d = true;
+                } else {
+                    chain.push(obj.base().color_transform());
+                }
+            }
+            node = obj.parent();
+        }
+        if on_stage {
+            let mut accumulated = ColorTransform::default();
+            for ct in chain.into_iter().rev() {
+                accumulated *= ct;
+            }
+            color_transform = accumulated * color_transform;
+        }
+    }
+
+    color_transform_to_object(&color_transform, activation)
+}
