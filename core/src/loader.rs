@@ -1910,16 +1910,20 @@ impl<'gc> MovieLoader<'gc> {
                             mc.compressed_loaded_bytes() as usize,
                             mc.compressed_total_bytes() as usize,
                         )?;
-                        uc.post_frame_callbacks.push(PostFrameCallback {
-                            callback: Box::new(move |uc, dobj: DisplayObject<'_>| {
-                                if let Err(e) =
-                                    MovieLoader::movie_loader_complete(handle, uc, Some(dobj), 0, false)
-                                {
-                                    tracing::error!("Error finishing loading of Loader.loadBytes movie {dobj:?}: {e:?}");
-                                }
-                            }),
-                            data: clip,
-                        });
+                        if movie.is_action_script_3() {
+                            MovieLoader::movie_loader_complete(handle, uc, Some(clip), 0, false)?;
+                        } else {
+                            uc.post_frame_callbacks.push(PostFrameCallback {
+                                callback: Box::new(move |uc, dobj: DisplayObject<'_>| {
+                                    if let Err(e) =
+                                        MovieLoader::movie_loader_complete(handle, uc, Some(dobj), 0, false)
+                                    {
+                                        tracing::error!("Error finishing loading of Loader.loadBytes movie {dobj:?}: {e:?}");
+                                    }
+                                }),
+                                data: clip,
+                            });
+                        }
                     }
                 }
 
@@ -2174,15 +2178,10 @@ impl<'gc> MovieLoader<'gc> {
             );
         }
 
-        let defer_first_frame = matches!(
-            vm_data,
-            MovieLoaderVMData::Avm2 {
-                load_bytes_info: None,
-                ..
-            }
-        ) && dobj
-            .and_then(|dobj| dobj.as_movie_clip())
-            .is_some_and(|mc| mc.movie().is_action_script_3());
+        let defer_first_frame = matches!(vm_data, MovieLoaderVMData::Avm2 { .. })
+            && dobj
+                .and_then(|dobj| dobj.as_movie_clip())
+                .is_some_and(|mc| mc.movie().is_action_script_3());
 
         if let Some(mc) = dobj.and_then(|dobj| dobj.as_movie_clip()) {
             // We call these methods after we initialize the `LoaderInfo`, but before
