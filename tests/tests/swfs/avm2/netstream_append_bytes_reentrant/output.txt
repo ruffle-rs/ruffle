@@ -1,0 +1,4 @@
+reentrant callbacks=initial,appended
+replacement callbacks=initial,replacement
+direct callbacks=metadata
+APPEND_BYTES_REENTRANT_COMPLETE
