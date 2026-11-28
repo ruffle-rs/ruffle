@@ -1,6 +1,7 @@
 use crate::avm1::{
     ActivationIdentifier as Avm1ActivationIdentifier, Object as Avm1Object, Value as Avm1Value,
 };
+use crate::avm2::object::Matrix3DObject;
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, Error as Avm2Error, LoaderInfoObject,
     Multiname as Avm2Multiname, Object as Avm2Object, StageObject as Avm2StageObject, TObject as _,
@@ -271,7 +272,9 @@ pub struct DisplayObjectBase<'gc> {
     matrix: Cell<Matrix>,
     color_transform: Cell<ColorTransform>,
     perspective_projection: Cell<Option<PerspectiveProjection>>,
-    tz: Cell<f64>,
+    // When matrix3d is None, the matrix(2d) is used.
+    // Otherwise, matrix3d is used for transform.
+    matrix3d: Lock<Option<Matrix3DObject<'gc>>>,
 
     // Cached transform properties `_xscale`, `_yscale`, `_rotation`.
     // These are expensive to calculate, so they will be calculated and cached
@@ -348,7 +351,7 @@ impl Default for DisplayObjectBase<'_> {
             matrix: Default::default(),
             color_transform: Default::default(),
             perspective_projection: Default::default(),
-            tz: Cell::new(0.0),
+            matrix3d: Lock::new(None),
             rotation: Cell::new(Degrees::from_radians(0.0)),
             scale_x: Cell::new(Percent::from_unit(1.0)),
             scale_y: Cell::new(Percent::from_unit(1.0)),
@@ -403,13 +406,21 @@ impl<'gc> DisplayObjectBase<'gc> {
     fn transform(&self, apply_matrix: bool) -> Transform {
         Transform {
             matrix: if apply_matrix {
-                self.matrix.get()
+                if let Some(matrix3d) = self.matrix3d() {
+                    // TODO: Use the entire matrix3d. Squashed now.
+                    matrix3d.matrix().to_matrix()
+                } else {
+                    self.matrix()
+                }
             } else {
                 Matrix::IDENTITY
             },
             color_transform: self.color_transform.get(),
             perspective_projection: self.perspective_projection.get(),
-            tz: self.tz.get(),
+            tz: self
+                .matrix3d()
+                .map(|m| m.matrix().tz() as f64)
+                .unwrap_or(0.0),
         }
     }
 
@@ -420,6 +431,15 @@ impl<'gc> DisplayObjectBase<'gc> {
     pub fn set_matrix(&self, matrix: Matrix) {
         self.matrix.set(matrix);
         self.set_scale_rotation_cached(false);
+    }
+
+    pub fn matrix3d(&self) -> Option<Matrix3DObject<'gc>> {
+        self.matrix3d.get()
+    }
+
+    pub fn set_matrix3d(this: &Write<Self>, matrix3d: Option<Matrix3DObject<'gc>>) {
+        unlock!(this, Self, matrix3d).set(matrix3d);
+        this.set_scale_rotation_cached(false);
     }
 
     pub fn color_transform(&self) -> ColorTransform {
@@ -443,40 +463,73 @@ impl<'gc> DisplayObjectBase<'gc> {
     }
 
     fn x(&self) -> Twips {
-        self.matrix.get().tx
+        if let Some(matobj) = self.matrix3d.get() {
+            Twips::from_pixels(matobj.matrix().tx() as f64)
+        } else {
+            self.matrix.get().tx
+        }
     }
 
     fn set_x(&self, x: Twips) -> bool {
-        let mut matrix = self.matrix.get();
-        let changed = matrix.tx != x;
-        matrix.tx = x;
-        self.matrix.set(matrix);
-        self.set_transformed_by_script(true);
-        changed
+        if let Some(matobj) = self.matrix3d.get() {
+            let mut matrix3d = matobj.matrix_mut();
+            let changed = Twips::from_pixels(matrix3d.tx() as f64) != x;
+            matrix3d.set_tx(x.to_pixels() as f32);
+            self.set_transformed_by_script(true);
+            changed
+        } else {
+            let mut matrix = self.matrix.get();
+            let changed = matrix.tx != x;
+            matrix.tx = x;
+            self.matrix.set(matrix);
+            self.set_transformed_by_script(true);
+            changed
+        }
     }
 
     fn y(&self) -> Twips {
-        self.matrix.get().ty
+        if let Some(matobj) = self.matrix3d.get() {
+            Twips::from_pixels(matobj.matrix().ty() as f64)
+        } else {
+            self.matrix.get().ty
+        }
     }
 
     fn set_y(&self, y: Twips) -> bool {
-        let mut matrix = self.matrix.get();
-        let changed = matrix.ty != y;
-        matrix.ty = y;
-        self.matrix.set(matrix);
-        self.set_transformed_by_script(true);
-        changed
+        if let Some(matobj) = self.matrix3d.get() {
+            let mut matrix = matobj.matrix_mut();
+            let changed = Twips::from_pixels(matrix.ty() as f64) != y;
+            matrix.set_ty(y.to_pixels() as f32);
+            self.set_transformed_by_script(true);
+            changed
+        } else {
+            let mut matrix = self.matrix.get();
+            let changed = matrix.ty != y;
+            matrix.ty = y;
+            self.matrix.set(matrix);
+            self.set_transformed_by_script(true);
+            changed
+        }
     }
 
     fn z(&self) -> f64 {
-        self.tz.get()
+        if let Some(matobj) = self.matrix3d.get() {
+            matobj.matrix().tz() as f64
+        } else {
+            0.0
+        }
     }
 
     fn set_z(&self, tz: f64) -> bool {
-        let changed = self.tz.get() != tz;
-        self.set_transformed_by_script(true);
-        self.tz.set(tz);
-        changed
+        if let Some(matobj) = self.matrix3d.get() {
+            let mut matrix = matobj.matrix_mut();
+            let changed = matrix.tz() as f64 != tz;
+            matrix.set_tz(tz as f32);
+            self.set_transformed_by_script(true);
+            changed
+        } else {
+            unreachable!("Matrix3DObject should be assigned before setting z");
+        }
     }
 
     /// Caches the scale and rotation factors for this display object, if necessary.
@@ -918,14 +971,6 @@ impl<'gc> DisplayObjectBase<'gc> {
 
     fn set_meta_data(this: &Write<Self>, value: Avm2Object<'gc>) {
         unlock!(this, Self, meta_data).set(Some(value));
-    }
-
-    pub fn has_matrix3d_stub(&self) -> bool {
-        self.contains_flag(DisplayObjectFlags::HAS_MATRIX3D_STUB)
-    }
-
-    pub fn set_has_matrix3d_stub(&self, value: bool) {
-        self.set_flag(DisplayObjectFlags::HAS_MATRIX3D_STUB, value)
     }
 }
 
@@ -1490,6 +1535,13 @@ pub trait TDisplayObject<'gc>:
     /// It is the callers responsibility to do so.
     fn set_matrix(self, matrix: Matrix) {
         self.base().set_matrix(matrix);
+    }
+
+    /// Sets the matrix3d of this object.
+    /// This does NOT invalidate the cache, as it's often used with other operations.
+    /// It is the callers responsibility to do so.
+    fn set_matrix3d(self, mc: &Mutation<'gc>, matrix: Option<Matrix3DObject<'gc>>) {
+        DisplayObjectBase::set_matrix3d(Gc::write(mc, self.base()), matrix);
     }
 
     /// Sets the color transform of this object.

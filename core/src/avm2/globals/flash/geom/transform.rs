@@ -8,7 +8,7 @@ use crate::avm2::object::Matrix3DObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, TObject as _, Value};
 use crate::display_object::{BoundsMode, DisplayObject, TDisplayObject};
-use crate::{avm2_stub_getter, avm2_stub_method, avm2_stub_setter};
+use crate::{avm2_stub_method, avm2_stub_setter};
 use ruffle_render::matrix::Matrix;
 use ruffle_render::matrix3d::Matrix3D;
 use ruffle_render::perspective_projection::PerspectiveProjection;
@@ -60,7 +60,7 @@ pub fn get_matrix<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if get_display_object(this).base().has_matrix3d_stub() {
+    if get_display_object(this).base().matrix3d().is_some() {
         Ok(Value::Null)
     } else {
         let matrix = matrix_from_transform_object(this);
@@ -69,27 +69,43 @@ pub fn get_matrix<'gc>(
 }
 
 pub fn set_matrix<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     let dobj = get_display_object(this);
-    let Some(obj) = args.try_get_object(0) else {
-        dobj.base().set_has_matrix3d_stub(true);
-        return Ok(Value::Undefined);
-    };
 
-    let matrix = object_to_matrix(obj);
-    dobj.set_matrix(matrix);
+    match (args.try_get_object(0), dobj.base().matrix3d()) {
+        (Some(obj), _) => {
+            let matrix = object_to_matrix(obj);
+            dobj.set_matrix3d(activation.gc(), None);
+            dobj.set_matrix(matrix);
+        }
+        (None, None) => {
+            let matrix = dobj.base().matrix();
+            dobj.set_matrix3d(
+                activation.gc(),
+                Some(Matrix3DObject::new(
+                    activation.context,
+                    Matrix3D::from_matrix(matrix),
+                )),
+            );
+            dobj.set_matrix(Matrix::IDENTITY);
+            return Ok(Value::Undefined);
+        }
+        (None, Some(_mat3dobj)) => {
+            return Ok(Value::Undefined);
+        }
+    }
+
     dobj.set_transformed_by_script(true);
     if let Some(parent) = dobj.parent() {
         // Self-transform changes are automatically handled,
         // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
         parent.invalidate_cached_bitmap();
     }
-    dobj.base().set_has_matrix3d_stub(false);
     Ok(Value::Undefined)
 }
 
@@ -133,14 +149,14 @@ pub fn get_concatenated_matrix<'gc>(
     }
 }
 
-pub fn has_matrix3d_from_transform_object(transform_object: Object<'_>) -> bool {
-    get_display_object(transform_object)
-        .base()
-        .has_matrix3d_stub()
-}
-
 pub fn matrix_from_transform_object(transform_object: Object<'_>) -> Matrix {
     get_display_object(transform_object).base().matrix()
+}
+
+pub fn matrix3d_from_transform_object<'gc>(
+    transform_object: Object<'gc>,
+) -> Option<Matrix3DObject<'gc>> {
+    get_display_object(transform_object).base().matrix3d()
 }
 
 pub fn color_transform_from_transform_object(transform_object: Object<'_>) -> ColorTransform {
@@ -276,23 +292,14 @@ fn rectangle_to_object<'gc>(
 }
 
 pub fn get_matrix_3d<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    // FIXME: This Matrix3D is generated from the 2D Matrix.
-    // It does not work when the matrix contains any transformation in 3D.
-    // Support native Matrix3D.
-    avm2_stub_getter!(activation, "flash.geom.Transform", "matrix3D");
-
-    let display_object = get_display_object(this);
-    if display_object.base().has_matrix3d_stub() {
-        let matrix = get_display_object(this).base().matrix();
-        let mut matrix3d = Matrix3D::from_matrix(matrix);
-        matrix3d.set_tz(display_object.z() as f32);
-        Ok(Matrix3DObject::new(activation.context, matrix3d).into())
+    if let Some(mobj) = get_display_object(this).base().matrix3d() {
+        Ok(mobj.into())
     } else {
         Ok(Value::Null)
     }
@@ -305,27 +312,16 @@ pub fn set_matrix_3d<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    // FIXME: This sets 2D Matrix generated from the given Matrix3D, ignoring 3D parameters.
-    // Support native Matrix3D.
+    // FIXME: Support full Matrix3D rendering.
     avm2_stub_setter!(activation, "flash.geom.Transform", "matrix3D");
 
     let display_object = get_display_object(this);
 
-    let (matrix, has_matrix3d, tz) = {
-        match args.try_get_object(0) {
-            Some(obj) => {
-                let matrix3d = obj.as_matrix3d_object().unwrap().matrix();
-                let matrix = matrix3d.to_matrix();
-                let tz = matrix3d.tz();
-                (matrix, true, tz)
-            }
-            None => (Matrix::IDENTITY, false, 0.0),
-        }
-    };
+    let matrix3d = args
+        .try_get_object(0)
+        .map(|object| object.as_matrix3d_object().unwrap());
 
-    display_object.set_matrix(matrix);
-    display_object.set_z(tz as f64);
-    display_object.base().set_has_matrix3d_stub(has_matrix3d);
+    display_object.set_matrix3d(activation.gc(), matrix3d);
 
     Ok(Value::Undefined)
 }
@@ -393,7 +389,7 @@ pub fn get_relative_matrix_3d<'gc>(
     avm2_stub_method!(activation, "flash.geom.Transform", "getRelativeMatrix3D");
 
     let display_object = get_display_object(this);
-    if !display_object.base().has_matrix3d_stub() {
+    if display_object.base().matrix3d().is_none() {
         return Ok(Value::Null);
     }
 

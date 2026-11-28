@@ -5,9 +5,11 @@ use crate::avm2::activation::Activation;
 use crate::avm2::error::{make_error_2005, make_error_2007, make_error_2008, make_error_2078};
 use crate::avm2::filters::FilterAvm2Ext;
 use crate::avm2::function::FunctionArgs;
-use crate::avm2::globals::flash::geom::transform::color_transform_from_transform_object;
-use crate::avm2::globals::flash::geom::transform::has_matrix3d_from_transform_object;
-use crate::avm2::globals::flash::geom::transform::matrix_from_transform_object;
+use crate::avm2::globals::flash::geom::transform::{
+    color_transform_from_transform_object, matrix_from_transform_object,
+    matrix3d_from_transform_object,
+};
+use crate::avm2::globals::methods::flash_display_display_object as display_object_methods;
 use crate::avm2::globals::slots::flash_display_shader as shader_slots;
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
 use crate::avm2::globals::slots::flash_geom_rectangle as rectangle_slots;
@@ -391,12 +393,12 @@ pub fn set_z<'gc>(
     args: FunctionArgs<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_setter!(activation, "flash.display.DisplayObject", "z");
-    let this = this.as_object().unwrap();
+    let thisobj = this.as_object().unwrap();
 
-    if let Some(dobj) = this.as_display_object() {
+    if let Some(dobj) = thisobj.as_display_object() {
+        this.call_method(display_object_methods::ASSIGN_MATRIX_3D, &[], activation)?;
         let z = args.get_f64(0);
         dobj.set_z(z);
-        dobj.base().set_has_matrix3d_stub(true);
     }
     Ok(Value::Undefined)
 }
@@ -829,15 +831,18 @@ pub fn set_transform<'gc>(
     let transform = args.get_object(activation, 0, "transform")?;
 
     // FIXME - consider pixel bounds
-    let matrix = matrix_from_transform_object(transform);
-    let has_matrix3d = has_matrix3d_from_transform_object(transform);
-    let color_transform = color_transform_from_transform_object(transform);
-
     let dobj = this.as_display_object().unwrap();
-    let base = dobj.base();
-    base.set_matrix(matrix);
-    base.set_has_matrix3d_stub(has_matrix3d);
-    base.set_color_transform(color_transform);
+
+    if let Some(matrix3d) = matrix3d_from_transform_object(transform) {
+        dobj.set_matrix3d(activation.gc(), Some(matrix3d));
+    } else {
+        let matrix = matrix_from_transform_object(transform);
+        dobj.set_matrix(matrix);
+    }
+
+    let color_transform = color_transform_from_transform_object(transform);
+    dobj.base().set_color_transform(color_transform);
+
     if let Some(parent) = dobj.parent() {
         // Self-transform changes are automatically handled,
         // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
