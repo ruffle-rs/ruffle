@@ -24,8 +24,8 @@ use std::sync::Arc;
 use swf::{BlendMode, Color, ColorTransform, Point, Twips};
 use wasm_bindgen::{Clamped, JsCast, JsValue};
 use web_sys::{
-    CanvasGradient, CanvasPattern, CanvasRenderingContext2d, CanvasWindingRule, DomMatrix, Element,
-    HtmlCanvasElement, ImageData, Path2d,
+    CanvasGradient, CanvasPattern, CanvasRenderingContext2d, CanvasWindingRule, Document,
+    DomMatrix, Element, HtmlCanvasElement, ImageData, Path2d,
 };
 
 const GRADIENT_TRANSFORM_THRESHOLD: f32 = 0.0001;
@@ -34,6 +34,7 @@ pub struct WebCanvasRenderBackend {
     canvas: HtmlCanvasElement,
     context: CanvasRenderingContext2d,
     color_matrix: Element,
+    masked_color_matrix: Element,
     viewport_width: u32,
     viewport_height: u32,
     rect: Path2d,
@@ -211,6 +212,91 @@ impl BitmapData {
     }
 }
 
+fn create_color_matrix_filter(
+    document: &Document,
+    svg: &Element,
+    id: &str,
+    keep_transparent: bool,
+) -> Result<Element, Box<dyn std::error::Error>> {
+    const SVG_NS: Option<&str> = Some("http://www.w3.org/2000/svg");
+
+    let filter = document
+        .create_element_ns(SVG_NS, "filter")
+        .map_err(|_| "Couldn't make SVG filter")?;
+    filter
+        .set_attribute("id", id)
+        .map_err(|_| "Couldn't make SVG filter")?;
+    filter
+        .set_attribute("color-interpolation-filters", "sRGB")
+        .map_err(|_| "Couldn't make SVG filter")?;
+
+    let color_matrix = document
+        .create_element_ns(SVG_NS, "feColorMatrix")
+        .map_err(|_| "Couldn't make SVG feColorMatrix element")?;
+    color_matrix
+        .set_attribute("type", "matrix")
+        .map_err(|_| "Couldn't make SVG feColorMatrix element")?;
+    color_matrix
+        .set_attribute("values", "1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0")
+        .map_err(|_| "Couldn't make SVG feColorMatrix element")?;
+    color_matrix
+        .set_attribute("result", "color")
+        .map_err(|_| "Couldn't make SVG feColorMatrix element")?;
+    filter
+        .append_child(&color_matrix)
+        .map_err(|_| "append_child failed")?;
+
+    if keep_transparent {
+        let alpha_mask = document
+            .create_element_ns(SVG_NS, "feComponentTransfer")
+            .map_err(|_| "Couldn't make SVG feComponentTransfer element")?;
+        alpha_mask
+            .set_attribute("in", "SourceAlpha")
+            .map_err(|_| "Couldn't make SVG feComponentTransfer element")?;
+        alpha_mask
+            .set_attribute("result", "mask")
+            .map_err(|_| "Couldn't make SVG feComponentTransfer element")?;
+
+        let alpha_func = document
+            .create_element_ns(SVG_NS, "feFuncA")
+            .map_err(|_| "Couldn't make SVG feFuncA element")?;
+        alpha_func
+            .set_attribute("type", "linear")
+            .map_err(|_| "Couldn't make SVG feFuncA element")?;
+        alpha_func
+            .set_attribute("slope", "255")
+            .map_err(|_| "Couldn't make SVG feFuncA element")?;
+        alpha_mask
+            .append_child(&alpha_func)
+            .map_err(|_| "append_child failed")?;
+
+        let composite = document
+            .create_element_ns(SVG_NS, "feComposite")
+            .map_err(|_| "Couldn't make SVG feComposite element")?;
+        composite
+            .set_attribute("in", "color")
+            .map_err(|_| "Couldn't make SVG feComposite element")?;
+        composite
+            .set_attribute("in2", "mask")
+            .map_err(|_| "Couldn't make SVG feComposite element")?;
+        composite
+            .set_attribute("operator", "in")
+            .map_err(|_| "Couldn't make SVG feComposite element")?;
+
+        filter
+            .append_child(&alpha_mask)
+            .map_err(|_| "append_child failed")?;
+        filter
+            .append_child(&composite)
+            .map_err(|_| "append_child failed")?;
+    }
+
+    svg.append_child(&filter)
+        .map_err(|_| "append_child failed")?;
+
+    Ok(color_matrix)
+}
+
 impl WebCanvasRenderBackend {
     pub fn new(
         canvas: &HtmlCanvasElement,
@@ -260,32 +346,8 @@ impl WebCanvasRenderBackend {
         )
         .map_err(|_| "Couldn't make SVG")?;
 
-        let filter = document
-            .create_element_ns(Some("http://www.w3.org/2000/svg"), "filter")
-            .map_err(|_| "Couldn't make SVG filter")?;
-        filter
-            .set_attribute("id", "_cm")
-            .map_err(|_| "Couldn't make SVG filter")?;
-        filter
-            .set_attribute("color-interpolation-filters", "sRGB")
-            .map_err(|_| "Couldn't make SVG filter")?;
-
-        let color_matrix = document
-            .create_element_ns(Some("http://www.w3.org/2000/svg"), "feColorMatrix")
-            .map_err(|_| "Couldn't make SVG feColorMatrix element")?;
-        color_matrix
-            .set_attribute("type", "matrix")
-            .map_err(|_| "Couldn't make SVG feColorMatrix element")?;
-        color_matrix
-            .set_attribute("values", "1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0")
-            .map_err(|_| "Couldn't make SVG feColorMatrix element")?;
-
-        filter
-            .append_child(&color_matrix)
-            .map_err(|_| "append_child failed")?;
-
-        svg.append_child(&filter)
-            .map_err(|_| "append_child failed")?;
+        let color_matrix = create_color_matrix_filter(&document, &svg, "_cm", false)?;
+        let masked_color_matrix = create_color_matrix_filter(&document, &svg, "_cm_mask", true)?;
 
         canvas
             .append_child(&svg)
@@ -308,6 +370,7 @@ impl WebCanvasRenderBackend {
         let renderer = Self {
             canvas: canvas.clone(),
             color_matrix,
+            masked_color_matrix,
             context,
             viewport_width: 0,
             viewport_height: 0,
@@ -358,11 +421,18 @@ impl WebCanvasRenderBackend {
                 mult[0], add[0], mult[1], add[1], mult[2], add[2], mult[3], add[3]
             );
 
-            self.color_matrix
+            // The filter applies to the whole canvas, so an additive alpha would
+            // make fully transparent pixels visible, unlike in the other
+            // renderers. The masked filter is slower, so it's only used then.
+            let (color_matrix, filter) = if color_transform.a_add > 0 {
+                (&self.masked_color_matrix, "url('#_cm_mask')")
+            } else {
+                (&self.color_matrix, "url('#_cm')")
+            };
+            color_matrix
                 .set_attribute("values", &matrix_str)
                 .warn_on_error();
-
-            self.context.set_filter("url('#_cm')");
+            self.context.set_filter(filter);
         }
     }
 
