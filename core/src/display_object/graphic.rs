@@ -17,6 +17,7 @@ use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
+use ruffle_render::shape_utils::TessellationScale;
 use std::cell::{OnceCell, RefCell, RefMut};
 use swf::{CharacterId, Point, Rectangle, Twips};
 
@@ -130,7 +131,7 @@ impl<'gc> Graphic<'gc> {
     fn get_or_retessellate_handle(
         self,
         context: &mut RenderContext<'_, 'gc>,
-        current_scale: f32,
+        current_scale: TessellationScale,
     ) -> ShapeHandle {
         // Since graphics are created from a shared shape, we may be able to reuse a
         // cached tessellation from another instance at a similar scale.
@@ -158,7 +159,7 @@ impl<'gc> Graphic<'gc> {
         {
             let mut cache = shared.scaled_handle.borrow_mut();
             tracing::debug!(
-                "Graphic id={} retessellated: new_scale={:.2}, cache_size={}",
+                "Graphic id={} retessellated: new_scale={:?}, cache_size={}",
                 shared.id,
                 current_scale,
                 cache.len()
@@ -253,10 +254,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 
             // Calculate the current scale from the transform, to determine if
             // we can reuse a cached tessellation or need to retessellate.
-            let matrix = &transform.matrix;
-            let scale_x = f32::abs(matrix.a + matrix.c);
-            let scale_y = f32::abs(matrix.b + matrix.d);
-            let current_scale = ((scale_x * scale_x + scale_y * scale_y) / 2.0).sqrt();
+            let current_scale = TessellationScale::from_matrix(&transform.matrix);
 
             let handle = self.get_or_retessellate_handle(context, current_scale);
 

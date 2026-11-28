@@ -15,7 +15,7 @@ use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
 use ruffle_render::error::Error as BitmapError;
 use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
-use ruffle_render::shape_utils::{DistilledShape, GradientType};
+use ruffle_render::shape_utils::{DistilledShape, GradientType, TessellationScale};
 use ruffle_render::tessellator::{
     Gradient as TessGradient, ShapeTessellator, Vertex as TessVertex,
 };
@@ -567,7 +567,7 @@ impl WebGlRenderBackend {
         &mut self,
         shape: DistilledShape,
         bitmap_source: &dyn BitmapSource,
-        scale: f32,
+        scale: TessellationScale,
     ) -> Result<Vec<Draw>, Error> {
         use ruffle_render::tessellator::DrawType as TessDrawType;
 
@@ -1041,14 +1041,14 @@ impl RenderBackend for WebGlRenderBackend {
         shape: DistilledShape,
         bitmap_source: &dyn BitmapSource,
     ) -> ShapeHandle {
-        self.register_shape_with_scale(shape, bitmap_source, 1.0)
+        self.register_shape_with_scale(shape, bitmap_source, TessellationScale::IDENTITY)
     }
 
     fn register_shape_with_scale(
         &mut self,
         shape: DistilledShape,
         bitmap_source: &dyn BitmapSource,
-        scale: f32,
+        scale: TessellationScale,
     ) -> ShapeHandle {
         let mesh = match self.register_shape_internal(shape, bitmap_source, scale) {
             Ok(draws) => Mesh {

@@ -1,5 +1,7 @@
 use crate::bitmap::BitmapSource;
-use crate::shape_utils::{DistilledShape, DrawCommand, DrawPath, GradientType};
+use crate::shape_utils::{
+    DistilledShape, DrawCommand, DrawPath, GradientType, LineScaleMode, TessellationScale,
+};
 use indexmap::IndexSet;
 use lyon::path::Path;
 use lyon::tessellation::{
@@ -22,6 +24,16 @@ pub struct ShapeTessellator {
 
 const TESSELLATION_EPSILON: f32 = 0.0000001;
 
+/// Strokes narrower than this are tessellated as they will appear on screen, so they keep
+/// the same width along their whole length, however the shape is scaled or skewed. This is
+/// what Flash Player does in `from_shumway/acid/acid-stroke-0` and
+/// `visual/simple_shapes/strokes/scale`.
+///
+/// Wider strokes are still tessellated in the shape's coordinates and stretched along with
+/// it, as `from_shumway/acid/acid-scale` and `visual/filters/blur_scales_with_screen`
+/// expect. Flash Player 32 draws them with a uniform width on screen too (see #13657).
+const THIN_STROKE_WIDTH_LIMIT: swf::Twips = swf::Twips::from_pixels_i32(5);
+
 impl ShapeTessellator {
     pub fn new() -> Self {
         Self {
@@ -41,36 +53,61 @@ impl ShapeTessellator {
         shape: DistilledShape,
         bitmap_source: &dyn BitmapSource,
     ) -> Mesh {
-        self.tessellate_shape_with_scale(shape, bitmap_source, 1.0)
+        self.tessellate_shape_with_scale(shape, bitmap_source, TessellationScale::IDENTITY)
     }
 
+    /// Tessellates a shape that will be rendered with a transform of the given scale.
+    ///
+    /// Thin strokes are tessellated as they will appear on screen, which gives them the
+    /// width Flash draws them with, then transformed back into the shape's coordinates.
     #[instrument(level = "debug", skip_all)]
     pub fn tessellate_shape_with_scale(
         &mut self,
         shape: DistilledShape,
         bitmap_source: &dyn BitmapSource,
-        scale: f32,
+        scale: TessellationScale,
     ) -> Mesh {
         self.mesh = Vec::new();
         self.gradients = IndexSet::new();
         self.lyon_mesh = VertexBuffers::new();
 
+        // The scale that strokes of the default scale mode are widened by.
+        let line_scale = scale.line_scale(LineScaleMode::Both);
+        // When the scale collapses a direction, strokes can't be tessellated on screen.
+        let inverse_scale = scale.inverse();
+
         for path in shape.paths {
-            let (fill_style, lyon_path, next_is_stroke) = match &path {
+            let (fill_style, lyon_path, next_is_stroke, is_on_screen) = match &path {
                 DrawPath::Fill {
                     style,
                     commands,
                     winding_rule: _,
-                } => (*style, ruffle_path_to_lyon_path(commands, true), false),
+                } => (
+                    *style,
+                    ruffle_path_to_lyon_path(commands, true, TessellationScale::IDENTITY),
+                    false,
+                    false,
+                ),
                 DrawPath::Stroke {
                     style,
                     commands,
                     is_closed,
-                } => (
-                    style.fill_style(),
-                    ruffle_path_to_lyon_path(commands, *is_closed),
-                    true,
-                ),
+                } => {
+                    // Thin strokes are tessellated on screen, by scaling their path first.
+                    let is_on_screen =
+                        inverse_scale.is_some() && style.width() < THIN_STROKE_WIDTH_LIMIT;
+                    let path_scale = if is_on_screen {
+                        scale
+                    } else {
+                        TessellationScale::IDENTITY
+                    };
+                    (
+                        style.fill_style(),
+                        ruffle_path_to_lyon_path(commands, *is_closed, path_scale),
+                        true,
+                        is_on_screen,
+                    )
+                }
             };
 
             let (draw, color, needs_flush) = match fill_style {
@@ -160,12 +197,22 @@ impl ShapeTessellator {
             }
             self.is_stroke = next_is_stroke;
 
-            let mut buffers_builder =
-                BuffersBuilder::new(&mut self.lyon_mesh, RuffleVertexCtor { color });
+            let mut buffers_builder = BuffersBuilder::new(
+                &mut self.lyon_mesh,
+                RuffleVertexCtor {
+                    color,
+                    // Paths tessellated on screen are transformed back into shape coordinates.
+                    inverse_scale: if is_on_screen { inverse_scale } else { None },
+                },
+            );
             let result = match path {
                 DrawPath::Fill { winding_rule, .. } => {
                     // Larger scales require more precise tessellation to avoid artifacts
-                    let tolerance = FillOptions::DEFAULT_TOLERANCE / scale;
+                    let tolerance = if line_scale > TESSELLATION_EPSILON {
+                        FillOptions::DEFAULT_TOLERANCE / line_scale
+                    } else {
+                        FillOptions::DEFAULT_TOLERANCE
+                    };
                     self.fill_tess.tessellate_path(
                         &lyon_path,
                         &FillOptions::default()
@@ -175,18 +222,25 @@ impl ShapeTessellator {
                     )
                 }
                 DrawPath::Stroke { style, .. } => {
-                    // This calculation ensures that hairline strokes are rendered with
-                    // a minimum width of 1 pixel, while still allowing for proper scaling
                     let width = style.width().to_pixels() as f32;
-                    let min_screen_width = if f32::abs(scale) > TESSELLATION_EPSILON {
-                        1.0 / scale
+                    let scale_mode = LineScaleMode::from_line_style(style);
+                    // Flash draws all strokes with a minimum width of 1 pixel.
+                    let (width, tolerance) = if is_on_screen {
+                        // The path is already scaled, so this is the width on screen.
+                        let width = (width * scale.line_scale(scale_mode)).max(1.0);
+                        (width, StrokeOptions::DEFAULT_TOLERANCE)
+                    } else if line_scale > TESSELLATION_EPSILON {
+                        // Scale the stroke's width as Flash would on screen, keeping in mind
+                        // that the shape's transform will scale it once more.
+                        let width = width * scale.line_scale(scale_mode) / line_scale;
+                        (
+                            width.max(1.0 / line_scale),
+                            StrokeOptions::DEFAULT_TOLERANCE / line_scale,
+                        )
                     } else {
-                        1.0
+                        (width.max(1.0), StrokeOptions::DEFAULT_TOLERANCE)
                     };
-                    let width = width.max(min_screen_width);
 
-                    // Larger scales require more precise tessellation to avoid artifacts
-                    let tolerance = StrokeOptions::DEFAULT_TOLERANCE / scale;
                     let mut stroke_options = StrokeOptions::default()
                         .with_line_width(width)
                         .with_tolerance(tolerance)
@@ -382,10 +436,15 @@ fn swf_bitmap_to_gl_matrix(
     [[a, d, 0.0], [b, e, 0.0], [c, f, 1.0]]
 }
 
-fn ruffle_path_to_lyon_path(commands: &[DrawCommand], is_closed: bool) -> Path {
-    fn point(point: swf::Point<swf::Twips>) -> lyon::math::Point {
-        lyon::math::Point::new(point.x.to_pixels() as f32, point.y.to_pixels() as f32)
-    }
+fn ruffle_path_to_lyon_path(
+    commands: &[DrawCommand],
+    is_closed: bool,
+    scale: TessellationScale,
+) -> Path {
+    let point = |point: swf::Point<swf::Twips>| {
+        let (x, y) = scale.transform_point(point.x.to_pixels() as f32, point.y.to_pixels() as f32);
+        lyon::math::Point::new(x, y)
+    };
 
     let mut builder = Path::builder();
     let mut cursor = Some(swf::Point::ZERO);
@@ -450,24 +509,32 @@ fn swf_gradient_to_uniforms(
 
 struct RuffleVertexCtor {
     color: swf::Color,
+    /// Transforms a path tessellated on screen back into the shape's coordinates.
+    inverse_scale: Option<TessellationScale>,
 }
 
-impl FillVertexConstructor<Vertex> for RuffleVertexCtor {
-    fn new_vertex(&mut self, vertex: FillVertex) -> Vertex {
+impl RuffleVertexCtor {
+    fn vertex(&self, position: lyon::math::Point) -> Vertex {
+        let (x, y) = match self.inverse_scale {
+            Some(inverse_scale) => inverse_scale.transform_point(position.x, position.y),
+            None => (position.x, position.y),
+        };
         Vertex {
-            x: vertex.position().x,
-            y: vertex.position().y,
+            x,
+            y,
             color: self.color,
         }
     }
 }
 
+impl FillVertexConstructor<Vertex> for RuffleVertexCtor {
+    fn new_vertex(&mut self, vertex: FillVertex) -> Vertex {
+        self.vertex(vertex.position())
+    }
+}
+
 impl StrokeVertexConstructor<Vertex> for RuffleVertexCtor {
     fn new_vertex(&mut self, vertex: StrokeVertex) -> Vertex {
-        Vertex {
-            x: vertex.position().x,
-            y: vertex.position().y,
-            color: self.color,
-        }
+        self.vertex(vertex.position())
     }
 }

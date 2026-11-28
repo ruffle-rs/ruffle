@@ -27,7 +27,7 @@ use ruffle_render::filters::Filter;
 use ruffle_render::pixel_bender::{PixelBenderShader, PixelBenderShaderHandle};
 use ruffle_render::pixel_bender_support::PixelBenderShaderArgument;
 use ruffle_render::quality::StageQuality;
-use ruffle_render::shape_utils::DistilledShape;
+use ruffle_render::shape_utils::{DistilledShape, TessellationScale};
 use ruffle_render::tessellator::ShapeTessellator;
 use std::any::Any;
 use std::borrow::Cow;
@@ -287,7 +287,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         &mut self,
         shape: DistilledShape,
         bitmap_source: &dyn BitmapSource,
-        scale: f32,
+        scale: TessellationScale,
     ) -> Mesh {
         let shape_id = shape.id;
         let lyon_mesh =
@@ -529,7 +529,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         shape: DistilledShape,
         bitmap_source: &dyn BitmapSource,
     ) -> ShapeHandle {
-        let mesh = self.register_shape_internal(shape, bitmap_source, 1.0);
+        let mesh = self.register_shape_internal(shape, bitmap_source, TessellationScale::IDENTITY);
         ShapeHandle(Arc::new(mesh))
     }
 
@@ -538,7 +538,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         &mut self,
         shape: DistilledShape,
         bitmap_source: &dyn BitmapSource,
-        scale: f32,
+        scale: TessellationScale,
     ) -> ShapeHandle {
         let mesh = self.register_shape_internal(shape, bitmap_source, scale);
         ShapeHandle(Arc::new(mesh))

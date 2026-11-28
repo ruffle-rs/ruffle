@@ -1,16 +1,22 @@
 use crate::context::RenderContext;
+use crate::tessellation_cache::TessellationCache;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, BitmapSize, BitmapSource};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::shape_utils::{
-    DistilledShape, DrawCommand, DrawPath, FillRule, cubic_curve_bounds, quadratic_curve_bounds,
+    DistilledShape, DrawCommand, DrawPath, FillRule, TessellationScale, cubic_curve_bounds,
+    quadratic_curve_bounds,
 };
-use std::cell::OnceCell;
+use std::cell::{OnceCell, RefCell};
 use swf::{FillStyle, LineStyle, Point, Rectangle, Twips};
 
 #[derive(Clone, Debug)]
 pub struct Drawing {
     render_handle: OnceCell<ShapeHandle>,
+    /// Tessellations of this drawing at the scales it has been rendered with.
+    /// Only created for drawings with strokes, when they are first rendered,
+    /// and boxed as most drawings never need it.
+    scaled_handle: RefCell<Option<Box<TessellationCache>>>,
     shape_bounds: Rectangle<Twips>,
     edge_bounds: Rectangle<Twips>,
     paths: Vec<DrawingPath>,
@@ -23,6 +29,8 @@ pub struct Drawing {
     default_winding_rule: FillRule,
     /// Cached for fast emptiness check.
     is_empty: bool,
+    /// Whether any line style was set since the drawing was last cleared.
+    has_strokes: bool,
 }
 
 impl Default for Drawing {
@@ -35,6 +43,7 @@ impl Drawing {
     pub fn new() -> Self {
         Self {
             render_handle: OnceCell::new(),
+            scaled_handle: RefCell::new(None),
             shape_bounds: Default::default(),
             edge_bounds: Default::default(),
             paths: Vec::new(),
@@ -46,12 +55,14 @@ impl Drawing {
             fill_start: Point::ZERO,
             default_winding_rule: FillRule::EvenOdd,
             is_empty: true,
+            has_strokes: false,
         }
     }
 
     pub fn from_swf_shape(shape: &swf::Shape) -> Self {
         let mut this = Self {
             render_handle: OnceCell::new(),
+            scaled_handle: RefCell::new(None),
             shape_bounds: shape.shape_bounds,
             edge_bounds: shape.edge_bounds,
             paths: Vec::new(),
@@ -67,6 +78,7 @@ impl Drawing {
                 FillRule::EvenOdd
             },
             is_empty: true,
+            has_strokes: false,
         };
 
         let shape: DistilledShape = shape.into();
@@ -107,6 +119,7 @@ impl Drawing {
     fn mark_dirty(&mut self) {
         self.is_empty = false;
         self.render_handle.take();
+        *self.scaled_handle.get_mut() = None;
     }
 
     /// Set fill style and reset fill rule to default.
@@ -160,9 +173,11 @@ impl Drawing {
         self.cursor = Point::ZERO;
         self.fill_start = Point::ZERO;
         self.is_empty = true;
+        self.has_strokes = false;
 
         // An empty drawing doesn't need to hold onto a `ShapeHandle`.
         self.render_handle.take();
+        *self.scaled_handle.get_mut() = None;
     }
 
     pub fn set_line_style(&mut self, style: Option<LineStyle>) {
@@ -180,6 +195,7 @@ impl Drawing {
                 commands: vec![DrawCommand::MoveTo(self.cursor)],
                 is_closed: false,
             });
+            self.has_strokes = true;
         }
 
         self.mark_dirty();
@@ -245,84 +261,109 @@ impl Drawing {
             return None;
         }
 
-        let handle = self.render_handle.get_or_init(|| {
-            let mut paths = Vec::with_capacity(self.paths.len());
-
-            for path in &self.paths {
-                match path {
-                    DrawingPath::Fill(fill) => {
-                        paths.push(DrawPath::Fill {
-                            style: &fill.style,
-                            commands: fill.commands.to_owned(),
-                            winding_rule: fill.rule,
-                        });
-                    }
-                    DrawingPath::Line(line) => {
-                        paths.push(DrawPath::Stroke {
-                            style: &line.style,
-                            commands: line.commands.to_owned(),
-                            is_closed: line.is_closed,
-                        });
-                    }
-                }
-            }
-
-            if let Some(fill) = &self.current_fill {
-                paths.push(DrawPath::Fill {
-                    style: &fill.style,
-                    commands: fill.commands.to_owned(),
-                    winding_rule: fill.rule,
-                })
-            }
-
-            for line in &self.pending_lines {
-                let mut commands = line.commands.to_owned();
-                let is_closed = if self.current_fill.is_some() {
-                    commands.push(DrawCommand::LineTo(self.fill_start));
-                    true
-                } else {
-                    self.cursor == self.fill_start
-                };
-                paths.push(DrawPath::Stroke {
-                    style: &line.style,
-                    commands,
-                    is_closed,
-                })
-            }
-
-            if let Some(line) = &self.current_line {
-                let mut commands = line.commands.to_owned();
-                let is_closed = if self.current_fill.is_some() {
-                    commands.push(DrawCommand::LineTo(self.fill_start));
-                    true
-                } else {
-                    self.cursor == self.fill_start
-                };
-                paths.push(DrawPath::Stroke {
-                    style: &line.style,
-                    commands,
-                    is_closed,
-                })
-            }
-
-            let shape = DistilledShape {
-                paths,
-                shape_bounds: self.shape_bounds,
-                edge_bounds: self.edge_bounds,
-                id: 0,
-            };
-            renderer.register_shape(shape, self)
-        });
+        let handle = self
+            .render_handle
+            .get_or_init(|| renderer.register_shape(self.distilled_shape(), self));
 
         Some(handle.clone())
     }
 
-    pub fn render(&self, context: &mut RenderContext) {
-        if let Some(handle) = self.register_or_replace(context.renderer) {
-            context
-                .commands
-                .render_shape(handle, context.transform_stack.transform());
+    fn distilled_shape(&self) -> DistilledShape<'_> {
+        let mut paths = Vec::with_capacity(self.paths.len());
+
+        for path in &self.paths {
+            match path {
+                DrawingPath::Fill(fill) => {
+                    paths.push(DrawPath::Fill {
+                        style: &fill.style,
+                        commands: fill.commands.to_owned(),
+                        winding_rule: fill.rule,
+                    });
+                }
+                DrawingPath::Line(line) => {
+                    paths.push(DrawPath::Stroke {
+                        style: &line.style,
+                        commands: line.commands.to_owned(),
+                        is_closed: line.is_closed,
+                    });
+                }
+            }
         }
+
+        if let Some(fill) = &self.current_fill {
+            paths.push(DrawPath::Fill {
+                style: &fill.style,
+                commands: fill.commands.to_owned(),
+                winding_rule: fill.rule,
+            })
+        }
+
+        for line in &self.pending_lines {
+            let mut commands = line.commands.to_owned();
+            let is_closed = if self.current_fill.is_some() {
+                commands.push(DrawCommand::LineTo(self.fill_start));
+                true
+            } else {
+                self.cursor == self.fill_start
+            };
+            paths.push(DrawPath::Stroke {
+                style: &line.style,
+                commands,
+                is_closed,
+            })
+        }
+
+        if let Some(line) = &self.current_line {
+            let mut commands = line.commands.to_owned();
+            let is_closed = if self.current_fill.is_some() {
+                commands.push(DrawCommand::LineTo(self.fill_start));
+                true
+            } else {
+                self.cursor == self.fill_start
+            };
+            paths.push(DrawPath::Stroke {
+                style: &line.style,
+                commands,
+                is_closed,
+            })
+        }
+
+        DistilledShape {
+            paths,
+            shape_bounds: self.shape_bounds,
+            edge_bounds: self.edge_bounds,
+            id: 0,
+        }
+    }
+
+    pub fn render(&self, context: &mut RenderContext) {
+        // Only strokes depend on the scale the drawing is rendered with.
+        if !self.has_strokes {
+            if let Some(handle) = self.register_or_replace(context.renderer) {
+                context
+                    .commands
+                    .render_shape(handle, context.transform_stack.transform());
+            }
+            return;
+        }
+
+        // Tessellate for the scale this drawing is rendered with, so that its strokes
+        // have the correct width on screen.
+        let transform = context.transform_stack.transform();
+        let scale = TessellationScale::from_matrix(&transform.matrix);
+        let mut cache = self.scaled_handle.borrow_mut();
+        let cache = cache.get_or_insert_with(|| Box::new(TessellationCache::new()));
+        let handle = if let Some(handle) = cache.find_near_and_touch(scale) {
+            handle
+        } else {
+            let shape = self.distilled_shape();
+            let handle = context
+                .renderer
+                .register_shape_with_scale(shape, self, scale);
+            cache.insert(scale, handle.clone());
+            handle
+        };
+        context.commands.render_shape(handle, transform);
     }
 
     pub fn self_bounds(&self, include_strokes: bool) -> Rectangle<Twips> {
