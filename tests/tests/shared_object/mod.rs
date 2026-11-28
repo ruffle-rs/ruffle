@@ -93,8 +93,10 @@ pub fn shared_object_self_ref_avm1(
             shared_objects: HashMap::from([(
                 "localhost//RuffleTestRef".to_string(),
                 SharedObjectConfig {
-                    expected: "RuffleTestRef".to_string(),
-                    known_failure: false,
+                    load: None,
+                    expected: Some("RuffleTestRef".to_string()),
+                    nondeterministic: false,
+                    known_failure: Some(false),
                 },
             )]),
             ..Default::default()

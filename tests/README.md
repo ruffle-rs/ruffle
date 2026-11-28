@@ -192,16 +192,28 @@ min_max_amplitude = 0.4
 # When the assertion passes in the future, it'll fail and alert that it now passes.
 known_failure = false
 
-# SharedObject assertions to perform, with the exact SharedObject path (e.g. localhost/test.swf/localName). This block is repeatable.
-[shared_objects."name used in SWF"]
+# SharedObject options for the exact storage key used by the SWF (e.g.
+# localhost/test.swf/RuffleTest). This block is repeatable.
+[shared_objects."localhost/test.swf/RuffleTest"]
 
-# Extension-less path to the expected sol file.
-# Usually a `.sol` file matching what Flash Player would generate.
-# The test runner will compare against expected + ".sol".
-expected = "foo"
+# Path (without the .sol suffix) to preload into storage before the SWF runs.
+# Optional; omit this when the test does not need preloaded data.
+load = "initial"
 
-# If true, this shared object is known to fail.
-# The test runner will compare against expected + ".ruffle.sol" instead.
+# Path (without the .sol suffix) to compare against after the SWF runs.
+# Optional; omit this for a load-only fixture.
+# Usually a file matching what Flash Player would generate.
+expected = "expected"
+
+# If true, Flash Player's serialized output is non-deterministic for this
+# SharedObject. The runner compares against expected.ruffle.sol instead of
+# requiring expected.sol. The corresponding expected.sol file must not exist.
+# This cannot be combined with known_failure.
+nondeterministic = false
+
+# If true, this SharedObject is known to fail its comparison against Flash.
+# This requires expected to be set and uses both expected.sol and
+# expected.ruffle.sol. It cannot be combined with nondeterministic.
 known_failure = false
 
 # A single device font provided for this test.

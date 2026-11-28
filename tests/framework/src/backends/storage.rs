@@ -6,10 +6,9 @@ pub struct TestStorageBackend {
 }
 
 impl TestStorageBackend {
-    pub fn new() -> Self {
-        Self {
-            map: HashMap::new(),
-        }
+    /// Creates a storage backend preloaded with the provided SharedObject data.
+    pub fn with_initial_data(map: HashMap<String, Vec<u8>>) -> Self {
+        Self { map }
     }
 
     /// Exposes the inner data so we can use them in tests.
