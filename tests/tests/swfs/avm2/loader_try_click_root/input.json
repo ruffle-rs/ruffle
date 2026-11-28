@@ -1,5 +1,8 @@
 [
   {
+    "type": "Wait"
+  },
+  {
     "type": "MouseMove",
     "pos": [45, 47]
   },

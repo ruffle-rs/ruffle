@@ -3,12 +3,12 @@ addedToStage: target=[object Loader], currentTarget=[object Loader], eventPhase=
 open: target=[object LoaderInfo], currentTarget=[object LoaderInfo], eventPhase=2, bubbles=false
 progress: bytesLoaded=0, bytesTotal=1053
 progress: bytesLoaded=1053, bytesTotal=1053
+frame 1
 child
 child added: target=[object Child], currentTarget=[object Child], eventPhase=2, bubbles=true
 child added: target=[object Child], currentTarget=[object Child], eventPhase=2, bubbles=true
 added: target=[object Child], currentTarget=[object Loader], eventPhase=3, bubbles=true
 child addedToStage: target=[object Child], currentTarget=[object Child], eventPhase=2, bubbles=false
-frame 1
 init: target=[object LoaderInfo], currentTarget=[object LoaderInfo], eventPhase=2, bubbles=false
 httpStatus: status=0
 complete: target=[object LoaderInfo], currentTarget=[object LoaderInfo], eventPhase=2, bubbles=false
@@ -20,12 +20,12 @@ child removedFromStage: target=[object Child], currentTarget=[object Child], eve
 open: target=[object LoaderInfo], currentTarget=[object LoaderInfo], eventPhase=2, bubbles=false
 progress: bytesLoaded=0, bytesTotal=1053
 progress: bytesLoaded=1053, bytesTotal=1053
+frame 2
 child
 child added: target=[object Child], currentTarget=[object Child], eventPhase=2, bubbles=true
 child added: target=[object Child], currentTarget=[object Child], eventPhase=2, bubbles=true
 added: target=[object Child], currentTarget=[object Loader], eventPhase=3, bubbles=true
 child addedToStage: target=[object Child], currentTarget=[object Child], eventPhase=2, bubbles=false
-frame 2
 init: target=[object LoaderInfo], currentTarget=[object LoaderInfo], eventPhase=2, bubbles=false
 httpStatus: status=0
 complete: target=[object LoaderInfo], currentTarget=[object LoaderInfo], eventPhase=2, bubbles=false

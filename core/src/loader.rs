@@ -16,7 +16,6 @@ use crate::avm2::{
     Activation as Avm2Activation, Avm2, BitmapDataObject, Domain as Avm2Domain,
     Object as Avm2Object, Value as Avm2Value,
 };
-use crate::avm2_stub_method_context;
 use crate::backend::navigator::{
     ErrorResponse, FetchReason, OwnedFuture, Request, SuccessResponse,
 };
@@ -329,6 +328,7 @@ impl<'gc> LoadManager<'gc> {
             vm_data,
             loader_status: LoaderStatus::Pending,
             movie: None,
+            first_frame: FirstFrame::NotPending,
         };
         let handle = self.add_loader(loader);
         let loader = self.get_loader_mut(handle).unwrap();
@@ -421,6 +421,7 @@ impl<'gc> LoadManager<'gc> {
             vm_data,
             loader_status: LoaderStatus::Pending,
             movie: None,
+            first_frame: FirstFrame::NotPending,
         };
         let handle = context.load_manager.add_loader(loader);
         MovieLoader::movie_loader_bytes(handle, context, loader_url, bytes)
@@ -479,6 +480,56 @@ impl<'gc> LoadManager<'gc> {
         }
 
         did_finish
+    }
+
+    pub fn mark_first_frames_ready(&mut self) {
+        for loader in self.0.values_mut() {
+            if loader.first_frame == FirstFrame::WaitingForNextFrame {
+                loader.first_frame = FirstFrame::Ready;
+            }
+        }
+    }
+
+    pub fn run_first_frames(context: &mut UpdateContext<'gc>) {
+        // Flash Player's order between several movies isn't stable, so it isn't matched.
+        let handles: Vec<_> = context
+            .load_manager
+            .0
+            .iter()
+            .filter(|(_, loader)| loader.first_frame == FirstFrame::Ready)
+            .map(|(h, _)| h)
+            .collect();
+
+        for handle in handles {
+            // A goto in a constructor runs this recursively.
+            let Some(loader) = context.load_manager.get_loader_mut(handle) else {
+                continue;
+            };
+            if loader.first_frame != FirstFrame::Ready {
+                continue;
+            }
+            loader.first_frame = FirstFrame::NotPending;
+
+            let target_clip = loader.target_clip;
+            let MovieLoaderVMData::Avm2 { loader_info, .. } = loader.vm_data else {
+                unreachable!("only AVM2 loads are deferred");
+            };
+
+            // Replaced by `Loader.unload` or another load in the meantime.
+            let still_loading = matches!(
+                loader_info.loader_stream(),
+                LoaderStream::NotYetLoaded(_, Some(content), _) if DisplayObject::ptr_eq(content, target_clip)
+            );
+            if !still_loading {
+                context.load_manager.remove_loader(handle);
+                continue;
+            }
+
+            let mc = target_clip
+                .as_movie_clip()
+                .expect("deferred content is a movie clip");
+            MovieLoader::run_first_frame(context, mc, loader_info);
+        }
     }
 
     pub fn run_exit_frame(context: &mut UpdateContext<'gc>) {
@@ -606,6 +657,20 @@ pub struct MovieLoader<'gc> {
     /// completed and we expect the Player to periodically tick preload
     /// until loading completes.
     movie: Option<SwfMovie<'gc>>,
+
+    #[collect(require_static)]
+    first_frame: FirstFrame,
+}
+
+/// Flash Player runs the first frame of a loaded AS3 movie in the first frame
+/// construction after the next frame has started: that frame's own, or the
+/// nested one of a goto in its `enterFrame`. It runs before timeline objects
+/// of that frame are constructed.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum FirstFrame {
+    NotPending,
+    WaitingForNextFrame,
+    Ready,
 }
 
 impl<'gc> MovieLoader<'gc> {
@@ -1845,16 +1910,20 @@ impl<'gc> MovieLoader<'gc> {
                             mc.compressed_loaded_bytes() as usize,
                             mc.compressed_total_bytes() as usize,
                         )?;
-                        uc.post_frame_callbacks.push(PostFrameCallback {
-                            callback: Box::new(move |uc, dobj: DisplayObject<'_>| {
-                                if let Err(e) =
-                                    MovieLoader::movie_loader_complete(handle, uc, Some(dobj), 0, false)
-                                {
-                                    tracing::error!("Error finishing loading of Loader.loadBytes movie {dobj:?}: {e:?}");
-                                }
-                            }),
-                            data: clip,
-                        });
+                        if movie.is_action_script_3() {
+                            MovieLoader::movie_loader_complete(handle, uc, Some(clip), 0, false)?;
+                        } else {
+                            uc.post_frame_callbacks.push(PostFrameCallback {
+                                callback: Box::new(move |uc, dobj: DisplayObject<'_>| {
+                                    if let Err(e) =
+                                        MovieLoader::movie_loader_complete(handle, uc, Some(dobj), 0, false)
+                                    {
+                                        tracing::error!("Error finishing loading of Loader.loadBytes movie {dobj:?}: {e:?}");
+                                    }
+                                }),
+                                data: clip,
+                            });
+                        }
                     }
                 }
 
@@ -2109,22 +2178,29 @@ impl<'gc> MovieLoader<'gc> {
             );
         }
 
+        let defer_first_frame = matches!(vm_data, MovieLoaderVMData::Avm2 { .. })
+            && dobj
+                .and_then(|dobj| dobj.as_movie_clip())
+                .is_some_and(|mc| mc.movie().is_action_script_3());
+
         if let Some(mc) = dobj.and_then(|dobj| dobj.as_movie_clip()) {
             // We call these methods after we initialize the `LoaderInfo`, but before
             // we add the loaded clip as a child. The frame constructor should see
             // 'this.parent == null' and 'this.stage == null'
             mc.post_instantiation(uc, None, Instantiator::Movie, false);
 
-            if mc.movie().is_action_script_3() {
-                mc.enter_frame(uc);
-                mc.construct_frame(uc);
-            }
+            if !defer_first_frame {
+                if mc.movie().is_action_script_3() {
+                    mc.enter_frame(uc);
+                    mc.construct_frame(uc);
+                }
 
-            // Movie clips created from ActionScript (including from a Loader) skip the next enterFrame,
-            // and consequently are observed to have their currentFrame lag one
-            // frame behind objects placed by the timeline (even if they were
-            // both placed in the same frame to begin with).
-            mc.base().set_skip_next_enter_frame(true);
+                // Movie clips created from ActionScript (including from a Loader) skip the next enterFrame,
+                // and consequently are observed to have their currentFrame lag one
+                // frame behind objects placed by the timeline (even if they were
+                // both placed in the same frame to begin with).
+                mc.base().set_skip_next_enter_frame(true);
+            }
 
             let movie = movie.unwrap();
             let flashvars = movie.parameters();
@@ -2142,48 +2218,8 @@ impl<'gc> MovieLoader<'gc> {
         }
 
         if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
-            let dobj = dobj.unwrap();
-
-            let mut loader = loader_info
-                .loader()
-                .expect("Loader should be Some")
-                .display_object()
-                .as_container()
-                .unwrap();
-
-            // If the AS3 constructor for the movie clip threw an error, Flash
-            // doesn't add the movie clip to the loader, and doesn't expose
-            // properties of the loaded child (doesn't call its equivalent of
-            // `set_expose_content`).
-            let constructor_errored = dobj
-                .as_movie_clip()
-                .is_some_and(|m| m.avm2_constructor_failed());
-
-            if !constructor_errored {
-                // This isn't completely correct - the 'large_preload' test observes
-                // the child being set after an 'enterFrame' call. However, our
-                // current logic should hopefully be good enough.
-                avm2_stub_method_context!(
-                    uc,
-                    "flash.display.Loader",
-                    "load",
-                    "addChild at the correct time"
-                );
-
-                loader_info.set_expose_content();
-
-                // Note that we do *not* use the 'addChild' method here:
-                // Per the flash docs, our implementation always throws
-                // an 'unsupported' error. Also, the AVM2 side of our movie
-                // clip does not yet exist. Any children added inside the movie
-                // frame constructor will see an 'added' event immediately, and
-                // an 'addedToStage' event *after* the constructor finishes
-                // when we add the movie as a child of the loader.
-                loader.insert_at_index(uc, dobj, 0);
-
-                if !movie.unwrap().is_action_script_3() {
-                    loader.insert_child_into_depth_list(uc, LOADER_INSERTED_AVM1_DEPTH, dobj);
-                }
+            if !defer_first_frame {
+                Self::insert_into_loader(uc, loader_info, dobj.unwrap(), movie.unwrap());
             }
         } else if let Some(dobj) = dobj {
             // This is a load of an image into AVM1 - add it as a child of the target clip.
@@ -2217,14 +2253,8 @@ impl<'gc> MovieLoader<'gc> {
                     );
                 }
             }
-            // This is fired after we process the movie's first frame,
-            // in `MovieClip.on_exit_frame`
+            // Movies fire these in `LoadManager::run_exit_frame`.
             MovieLoaderVMData::Avm2 { loader_info, .. } => {
-                let current_movie = loader_info.loader_stream().movie();
-
-                loader_info
-                    .set_loader_stream(LoaderStream::Swf(current_movie, dobj.unwrap()), uc.gc());
-
                 if let Some(dobj) = dobj
                     && dobj.as_movie_clip().is_none()
                 {
@@ -2235,8 +2265,62 @@ impl<'gc> MovieLoader<'gc> {
 
         let loader = uc.load_manager.get_loader_mut(handle).unwrap();
         loader.loader_status = LoaderStatus::Succeeded;
+        if defer_first_frame {
+            loader.first_frame = FirstFrame::WaitingForNextFrame;
+        }
 
         Ok(())
+    }
+
+    fn run_first_frame(
+        uc: &mut UpdateContext<'gc>,
+        mc: MovieClip<'gc>,
+        loader_info: LoaderInfoObject<'gc>,
+    ) {
+        mc.enter_frame(uc);
+        mc.construct_frame(uc);
+        Self::insert_into_loader(uc, loader_info, mc.into(), mc.movie());
+    }
+
+    fn insert_into_loader(
+        uc: &mut UpdateContext<'gc>,
+        loader_info: LoaderInfoObject<'gc>,
+        dobj: DisplayObject<'gc>,
+        movie: SwfMovie<'gc>,
+    ) {
+        let mut loader = loader_info
+            .loader()
+            .expect("Loader should be Some")
+            .display_object()
+            .as_container()
+            .unwrap();
+
+        // If the AS3 constructor for the movie clip threw an error, Flash
+        // doesn't add the movie clip to the loader, and doesn't expose
+        // properties of the loaded child (doesn't call its equivalent of
+        // `set_expose_content`).
+        let constructor_errored = dobj
+            .as_movie_clip()
+            .is_some_and(|m| m.avm2_constructor_failed());
+
+        if !constructor_errored {
+            loader_info.set_expose_content();
+
+            // Note that we do *not* use the 'addChild' method here:
+            // Per the flash docs, our implementation always throws
+            // an 'unsupported' error. Also, the AVM2 side of our movie
+            // clip does not yet exist. Any children added inside the movie
+            // frame constructor will see an 'added' event immediately, and
+            // an 'addedToStage' event *after* the constructor finishes
+            // when we add the movie as a child of the loader.
+            loader.insert_at_index(uc, dobj, 0);
+
+            if !movie.is_action_script_3() {
+                loader.insert_child_into_depth_list(uc, LOADER_INSERTED_AVM1_DEPTH, dobj);
+            }
+        }
+
+        loader_info.set_loader_stream(LoaderStream::Swf(movie, dobj), uc.gc());
     }
 
     /// Report a movie loader error to script code.

@@ -78,12 +78,14 @@ pub fn run_all_phases_avm2(context: &mut UpdateContext<'_>) {
     }
 
     *context.frame_phase = FramePhase::Enter;
+    context.load_manager.mark_first_frames_ready();
     OrphanManager::each_orphan_obj(context, |orphan, context| {
         orphan.enter_frame(context);
     });
     stage.enter_frame(context);
 
     *context.frame_phase = FramePhase::Construct;
+    LoadManager::run_first_frames(context);
     OrphanManager::each_orphan_obj(context, |orphan, context| {
         orphan.construct_frame(context);
     });
@@ -129,6 +131,8 @@ pub fn run_inner_goto_frame<'gc>(
     if initial_clip.swf_version() <= 9 && initial_clip.movie().is_action_script_3() {
         // We skip the next `enter_frame` call, so that we will still run the framescripts
         // queued for our target frame.
+        // TODO: Flash Player doesn't skip it for a loaded movie that runs its first
+        // frame later in this frame, but `enter_frame` passes the skip down to it.
         initial_clip.base().set_skip_next_enter_frame(true);
 
         return;
@@ -144,6 +148,7 @@ pub fn run_inner_goto_frame<'gc>(
     // Note - we do *not* call `enter_frame` or dispatch an `enterFrame` event
 
     *context.frame_phase = FramePhase::Construct;
+    LoadManager::run_first_frames(context);
     OrphanManager::each_orphan_obj(context, |orphan, context| {
         orphan.construct_frame(context);
     });

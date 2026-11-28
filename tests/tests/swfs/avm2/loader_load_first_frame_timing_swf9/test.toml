@@ -1,0 +1,12 @@
+num_ticks = 12
+known_failure = true
+
+[[compilers]]
+type = "Swfasm"
+source = "loadee.swfasm"
+target = "loadee.swf"
+
+[[compilers]]
+type = "Swfasm"
+source = "test.swfasm"
+target = "test.swf"

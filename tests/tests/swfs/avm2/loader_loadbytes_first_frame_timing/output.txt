@@ -1,0 +1,66 @@
+frame 0: a loadBytes returned: numChildren=0
+frame 0: stage frameConstructed
+frame 0: stage exitFrame
+frame 1: stage enterFrame
+frame 1: loadee a constructor: parent=null currentFrame=1
+frame 1: loadee a addedToStage
+frame 1: stage frameConstructed
+frame 1: loadee a frame 1 script
+frame 1: stage exitFrame
+frame 1: a init
+frame 1: a complete
+frame 2: stage enterFrame
+frame 2: b loadBytes returned: numChildren=0
+frame 2: loadee a first enterFrame
+frame 2: stage frameConstructed
+frame 2: stage exitFrame
+frame 3: stage enterFrame
+frame 3: loadee b constructor: parent=null currentFrame=1
+frame 3: loadee b addedToStage
+frame 3: stage frameConstructed
+frame 3: loadee b frame 1 script
+frame 3: stage exitFrame
+frame 3: b init
+frame 3: b complete
+frame 4: stage enterFrame
+frame 4: chain loadBytes returned: numChildren=0
+frame 4: loadee b first enterFrame
+frame 4: stage frameConstructed
+frame 4: stage exitFrame
+frame 5: stage enterFrame
+frame 5: chain constructor
+frame 5: chain addedToStage: loading inner
+frame 5: inner loadBytes returned: numChildren=0
+frame 5: stage frameConstructed
+frame 5: chain frame 1 script
+frame 5: stage exitFrame
+frame 5: chain init
+frame 5: chain complete
+frame 6: stage enterFrame
+frame 6: loadee inner constructor: parent=null currentFrame=1
+frame 6: loadee inner addedToStage
+frame 6: stage frameConstructed
+frame 6: loadee inner frame 1 script
+frame 6: stage exitFrame
+frame 6: inner init
+frame 7: stage enterFrame
+frame 7: loadee inner first enterFrame
+frame 7: stage frameConstructed
+frame 7: stage exitFrame
+frame 7: timer
+frame 7: d loadBytes returned: numChildren=0
+frame 8: stage enterFrame
+frame 8: loadee d constructor: parent=null currentFrame=1
+frame 8: loadee d addedToStage
+frame 8: stage frameConstructed
+frame 8: loadee d frame 1 script
+frame 8: stage exitFrame
+frame 8: d init
+frame 8: d complete
+frame 9: stage enterFrame
+frame 9: loadee d first enterFrame
+frame 9: stage frameConstructed
+frame 9: stage exitFrame
+frame 10: stage enterFrame
+frame 10: stage frameConstructed
+frame 10: stage exitFrame
