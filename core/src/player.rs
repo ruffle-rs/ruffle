@@ -2250,6 +2250,18 @@ impl Player {
                     Avm1::run_stack_frame_for_method(action.clip, object, name, &args, context);
                 }
 
+                ActionType::ConstructAvm1UnloadedMovieClip { movie } => {
+                    if let Some(clip) = action.clip.as_movie_clip() {
+                        clip.construct_avm1_unloaded_movie(context, movie);
+                    }
+                }
+
+                ActionType::FinishAvm1Unload { movie, object } => {
+                    if let Some(clip) = action.clip.as_movie_clip() {
+                        clip.finish_avm1_unload(context, movie, object);
+                    }
+                }
+
                 // Event handler method call (e.g. onEnterFrame).
                 ActionType::NotifyListeners {
                     listener,

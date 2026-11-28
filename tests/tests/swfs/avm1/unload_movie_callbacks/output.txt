@@ -1,0 +1,53 @@
+before unload
+unload_once entered=true
+unload_once immediateCustom=number
+unload_repeated entered=true
+unload_repeated immediateCustom=number
+remove_once entered=true
+remove_once immediateCustom=number
+unload_protected entered=true
+unload_protected immediateCustom=number
+unload_in_handler entered=true
+unload_in_handler immediateCustom=number
+load_in_handler entered=true
+load_in_handler immediateCustom=number
+properties after unload
+unload_once custom=undefined onUnload=undefined onEnterFrame=undefined
+unload_once samePrototype=false inherited=undefined
+unload_once prototypeType=object defaultPrototype=true nameType=string
+unload_once fromUnload=undefined
+unload_repeated custom=undefined onUnload=undefined onEnterFrame=undefined
+unload_repeated samePrototype=false inherited=undefined
+unload_repeated prototypeType=object defaultPrototype=true nameType=string
+unload_repeated fromUnload=undefined
+remove_once custom=undefined onUnload=undefined onEnterFrame=undefined
+remove_once samePrototype=false inherited=undefined
+remove_once prototypeType=undefined defaultPrototype=false nameType=undefined
+remove_once fromUnload=undefined
+unload_protected custom=undefined onUnload=undefined onEnterFrame=undefined
+unload_protected samePrototype=false inherited=undefined
+unload_protected prototypeType=object defaultPrototype=true nameType=string
+unload_protected fromUnload=undefined
+unload_in_handler custom=undefined onUnload=undefined onEnterFrame=undefined
+unload_in_handler samePrototype=false inherited=undefined
+unload_in_handler prototypeType=object defaultPrototype=true nameType=string
+unload_in_handler fromUnload=undefined
+final callbacks
+handler unload_once custom=number defaultPrototype=false
+unload_once unloadCalls=1 enterContinued=false
+handler unload_repeated custom=number defaultPrototype=false
+unload_repeated unloadCalls=1 enterContinued=false
+handler remove_once custom=number defaultPrototype=false
+remove_once unloadCalls=1 enterContinued=false
+handler unload_protected custom=number defaultPrototype=false
+unload_protected unloadCalls=1 enterContinued=false
+handler unload_in_handler custom=number defaultPrototype=false
+unload_in_handler unloadCalls=1 enterContinued=false
+handler load_in_handler custom=number defaultPrototype=false
+load_in_handler unloadCalls=1 enterContinued=false
+watcher calls=0 value=42 unwatch=false
+replacement marker=loaded
+direct marker=loaded
+replacement runs=2
+effects=6
+UNLOAD_CALLBACKS_COMPLETE

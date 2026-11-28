@@ -74,7 +74,7 @@ impl<'gc> MovieClipReference<'gc> {
         // We can't use as_display_object here as we explicitly don't want to convert `SuperObjects`
         let display_object = object.as_display_object_no_super()?;
         let (path, cached) = if let DisplayObject::MovieClip(mc) = display_object {
-            (mc.path(), display_object.object1()?)
+            (mc.path(), object)
         } else if activation.swf_version() <= 5 {
             let display_object = Self::process_swf5_references(activation, display_object)?;
 
@@ -133,8 +133,13 @@ impl<'gc> MovieClipReference<'gc> {
             .and_then(|c| c.upgrade(activation.gc()))
             && let Some(display_object) = cache.as_display_object_no_super()
         {
-            // We have to fallback to manual path-walking if the object is removed
-            if !display_object.avm1_removed() {
+            // Replaced AVM1 state is no longer a valid cached reference, even
+            // when another object keeps it alive. Fall back to the original path.
+            if !display_object.avm1_removed()
+                && display_object
+                    .as_movie_clip()
+                    .is_none_or(|clip| clip.owns_avm1_object(cache))
+            {
                 let display_object = Self::process_swf5_references(activation, display_object)?;
 
                 // Note that there is a bug here but this *is* how it works in Flash:

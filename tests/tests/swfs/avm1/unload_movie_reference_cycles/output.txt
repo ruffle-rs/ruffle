@@ -1,0 +1,12 @@
+construct create before=undefined
+construct first before=undefined self=constructed-first used=first idle=first latest=constructed-first
+unload first self=first used=first idle=first latest=constructed-first
+between used=second
+construct second before=undefined self=constructed-second used=second idle=second latest=constructed-second
+unload second self=second used=second idle=second latest=constructed-second
+after second used=constructed-second idle=constructed-second latest=constructed-second
+construct third before=undefined self=constructed-third used=undefined idle=undefined latest=constructed-third
+unload third self=third used=undefined idle=undefined latest=constructed-third
+final used=undefined idle=undefined latest=constructed-third viaParent=constructed-third
+retained supers=4 firstType=object
+UNLOAD_REFERENCE_CYCLES_COMPLETE

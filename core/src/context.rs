@@ -687,6 +687,15 @@ pub enum ActionType<'gc> {
         args: Vec<Avm1Value<'gc>>,
     },
 
+    /// Construct fresh AVM1 state before the old unload handlers run.
+    ConstructAvm1UnloadedMovieClip { movie: SwfMovie<'gc> },
+
+    /// Publish the fresh AVM1 state after the old unload handlers run.
+    FinishAvm1Unload {
+        movie: SwfMovie<'gc>,
+        object: Avm1Object<'gc>,
+    },
+
     /// A system listener method.
     NotifyListeners {
         listener: AvmString<'gc>,
@@ -699,7 +708,9 @@ impl ActionType<'_> {
     fn priority(&self) -> ActionPriority {
         match self {
             ActionType::Initialize { .. } => ActionPriority::Initialize,
-            ActionType::Construct { .. } => ActionPriority::Construct,
+            ActionType::Construct { .. } | ActionType::ConstructAvm1UnloadedMovieClip { .. } => {
+                ActionPriority::Construct
+            }
             _ => ActionPriority::Default,
         }
     }
@@ -726,6 +737,10 @@ impl fmt::Debug for ActionType<'_> {
                 .field("constructor", constructor)
                 .field("events", events)
                 .finish(),
+            ActionType::ConstructAvm1UnloadedMovieClip { .. } => {
+                f.write_str("ActionType::ConstructAvm1UnloadedMovieClip")
+            }
+            ActionType::FinishAvm1Unload { .. } => f.write_str("ActionType::FinishAvm1Unload"),
             ActionType::Method { object, name, args } => f
                 .debug_struct("ActionType::Method")
                 .field("object", object)

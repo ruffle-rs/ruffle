@@ -1,0 +1,17 @@
+num_ticks = 150
+
+[[compilers]]
+type = "Rascal"
+target = "test.swf"
+scripts = ["Test.as"]
+swf_version = 8
+frame_rate = 12.0
+use_network = true
+
+[[compilers]]
+type = "Rascal"
+target = "replacement.swf"
+scripts = ["Replacement.as"]
+swf_version = 8
+frame_rate = 12.0
+use_network = true

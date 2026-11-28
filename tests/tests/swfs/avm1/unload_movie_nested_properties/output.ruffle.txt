@@ -1,0 +1,16 @@
+after unload
+unload parent custom=undefined onUnload=undefined inherited=undefined defaultPrototype=true nameType=string
+unload parent handlerThis.custom=undefined handlerThis.name=string
+unload child custom=undefined onUnload=undefined inherited=undefined defaultPrototype=false nameType=undefined
+unload child handlerThis.custom=undefined handlerThis.name=undefined
+remove parent custom=undefined onUnload=undefined inherited=undefined defaultPrototype=false nameType=undefined
+remove parent handlerThis.custom=undefined handlerThis.name=undefined
+remove child custom=undefined onUnload=undefined inherited=undefined defaultPrototype=false nameType=undefined
+remove child handlerThis.custom=undefined handlerThis.name=undefined
+final callbacks
+unload parent unloadCalls=1 handlerCustom=number watchCalls=0 watched=42
+unload child unloadCalls=0 handlerCustom=undefined watchCalls=0 watched=undefined
+remove parent unloadCalls=1 handlerCustom=number watchCalls=0 watched=undefined
+remove child unloadCalls=1 handlerCustom=number watchCalls=0 watched=undefined
+parent unwatch=false
+NESTED_UNLOAD_COMPLETE
