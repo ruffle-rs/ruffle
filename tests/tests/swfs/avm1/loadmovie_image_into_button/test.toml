@@ -1,0 +1,7 @@
+num_ticks = 15
+known_failure = true
+
+[[compilers]]
+type = "Swfasm"
+target = "test.swf"
+source = "test.swfasm"

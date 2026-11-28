@@ -652,18 +652,21 @@ impl<'gc> MovieLoader<'gc> {
                     return Ok(true);
                 }
 
-                if target_clip.as_movie_clip().is_none() {
-                    // Non-movie-clip loads should not be handled in preload_tick
-                    tracing::error!("Cannot preload non-movie-clip loader");
-                    return Ok(false);
-                }
-
                 *target_clip
             }
             None => return Err(Error::Cancelled),
         };
 
-        let mc = mc.as_movie_clip().unwrap();
+        // An AVM1 `loadMovie` of a SWF into a button leaves the loader in the
+        // parsing state, and only this function moves it out of it. Without
+        // completing the load here, `Player::preload` would never finish:
+        // with a delayed or blocking load behavior (and in the test runner)
+        // the movie would stop running, and `onLoadComplete` would never fire.
+        // TODO: Flash Player replaces the button with the loaded movie (#9704).
+        let Some(mc) = mc.as_movie_clip() else {
+            MovieLoader::movie_loader_complete(handle, context, Some(mc), status, redirected)?;
+            return Ok(true);
+        };
 
         let did_finish = mc.preload(context, limit);
 
@@ -2187,8 +2190,11 @@ impl<'gc> MovieLoader<'gc> {
             }
         } else if let Some(dobj) = dobj {
             // This is a load of an image into AVM1 - add it as a child of the target clip.
-            if dobj.as_movie_clip().is_none() {
-                let mc = target_clip.as_movie_clip().unwrap();
+            // TODO: Flash Player also loads images into buttons, replacing
+            // them with a movie clip (#9704). Like for SWFs, we skip them.
+            if dobj.as_movie_clip().is_none()
+                && let Some(mc) = target_clip.as_movie_clip()
+            {
                 mc.replace_with_movie(uc, Some(movie.unwrap()), true, None);
                 mc.replace_at_depth(uc, dobj, 1);
 
