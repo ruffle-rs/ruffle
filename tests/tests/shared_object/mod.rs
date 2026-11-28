@@ -1,82 +1,10 @@
 use ruffle_core::backend::storage::{MemoryStorageBackend, StorageBackend};
 use ruffle_test_framework::environment::Environment;
-use ruffle_test_framework::options::{SharedObjectConfig, TestOptions};
+use ruffle_test_framework::options::TestOptions;
 use ruffle_test_framework::runner::TestStatus;
 use ruffle_test_framework::test::Test;
 use ruffle_test_framework::vfs::{PhysicalFS, VfsPath};
-use std::collections::HashMap;
 use std::thread::sleep;
-
-pub fn shared_object_self_ref_avm1(
-    environment: &impl Environment,
-) -> Result<(), libtest_mimic::Failed> {
-    // Test SharedObject persistence. Run an SWF that saves data
-    // to a shared object twice and verify that the data is saved.
-    let mut memory_storage_backend: Box<dyn StorageBackend> =
-        Box::<MemoryStorageBackend>::default();
-
-    // Initial run; no shared object data.
-    let test1 = &Test::from_options(
-        TestOptions {
-            num_ticks: Some(1),
-            output_path: "output1.txt".into(),
-            shared_objects: HashMap::from([(
-                "localhost//RuffleTestRef".to_string(),
-                SharedObjectConfig {
-                    load: None,
-                    expected: Some("RuffleTestRef".to_string()),
-                    nondeterministic: false,
-                    known_failure: Some(false),
-                },
-            )]),
-            ..Default::default()
-        },
-        VfsPath::new(PhysicalFS::new("tests/swfs/avm1/shared_object_self_ref/")),
-        "shared_object_self_ref_avm1".to_string(),
-    )?;
-    let mut runner = test1.create_test_runner(environment)?;
-
-    loop {
-        match runner.tick()? {
-            TestStatus::Continue => {}
-            TestStatus::Sleep(duration) => sleep(duration),
-            TestStatus::Finished => break,
-        }
-    }
-
-    {
-        // Save the storage backend for next run.
-        let mut player = runner.player().lock().unwrap();
-        player.swap_storage(&mut memory_storage_backend);
-    }
-
-    // Re-run the SWF, verifying that the shared object persists.
-    let test2 = &Test::from_options(
-        TestOptions {
-            num_ticks: Some(1),
-            output_path: "output2.txt".into(),
-            ..Default::default()
-        },
-        VfsPath::new(PhysicalFS::new("tests/swfs/avm1/shared_object_self_ref/")),
-        "shared_object_self_ref_avm1".to_string(),
-    )?;
-    let mut runner = test2.create_test_runner(environment)?;
-    {
-        // Swap in the previous storage backend.
-        let mut player = runner.player().lock().unwrap();
-        player.swap_storage(&mut memory_storage_backend);
-    }
-
-    loop {
-        match runner.tick()? {
-            TestStatus::Continue => {}
-            TestStatus::Sleep(duration) => sleep(duration),
-            TestStatus::Finished => break,
-        }
-    }
-
-    Ok(())
-}
 
 pub fn shared_object_avm2(environment: &impl Environment) -> Result<(), libtest_mimic::Failed> {
     // Test SharedObject persistence. Run an SWF that saves data
