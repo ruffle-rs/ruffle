@@ -10,17 +10,17 @@ root loader: complete 1293
 child 1 loader: open 0
 child 1 loader: progress 0
 child 1 loader: progress 8700
-construct instance3, parent: null
-added instance3
 child 2 loader: open 0
 child 2 loader: progress 0
 child 2 loader: progress 8700
-construct instance5, parent: null
-added instance5
 enterFrame 2
+construct instance3, parent: null
+added instance3
+construct instance4, parent: null
+added instance4
 run frame 2 in root1
 run frame 1 in instance3
-run frame 1 in instance5
+run frame 1 in instance4
 exitFrame 2
 child 1 loader: init 8700
 child 1 loader: httpStatus 8700
@@ -33,5 +33,5 @@ run frame 3 in root1
 exitFrame 3
 enterFrame 4
 run frame 4 in root1
-instance5
+instance4
 exitFrame 4
