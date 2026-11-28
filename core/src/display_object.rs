@@ -1303,6 +1303,22 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
     }
 }
 
+/// The width and height of the AABB of a display object at a scale of 1
+/// but with its rotation, with each corner rounded to whole twips.
+///
+/// Like `width()` and `height()`, this transforms the bounds of each child
+/// separately, so it can be smaller than the rotated AABB of `bounds()`.
+fn unscaled_size<'gc>(object: impl TDisplayObject<'gc>) -> (f64, f64) {
+    let rotation = Matrix::rotate(object.rotation().into_radians() as f32);
+    let bounds = object.bounds_with_transform(&rotation, BoundsMode::Script);
+
+    (bounds.width().to_pixels(), bounds.height().to_pixels())
+}
+
+fn finite_or_zero(value: f64) -> f64 {
+    if value.is_finite() { value } else { 0.0 }
+}
+
 #[enum_trait_object(
     #[derive(Clone, Collect, Debug, Copy)]
     #[collect(no_drop)]
@@ -1742,43 +1758,20 @@ pub trait TDisplayObject<'gc>:
     /// Sets the pixel width of this display object in local space.
     /// The width is based on the AABB of the object.
     /// Set by the ActionScript `_width`/`width` properties.
-    /// This does odd things on rotated clips to match the behavior of Flash.
+    /// Each scale is set to the one at which the object, scaled uniformly, would be
+    /// `value` wide or keep its current height, respectively. For rotated objects,
+    /// the resulting width generally isn't `value`.
     fn set_width(self, _context: &mut UpdateContext<'gc>, value: f64) {
-        let object_bounds = self.bounds(BoundsMode::Script);
-        let object_width = object_bounds.width().to_pixels();
-        let object_height = object_bounds.height().to_pixels();
-        let aspect_ratio = object_height / object_width;
-
-        let (target_scale_x, target_scale_y) = if object_width != 0.0 {
-            (value / object_width, value / object_height)
-        } else {
-            (0.0, 0.0)
-        };
-
-        // No idea about the derivation of this -- figured it out via lots of trial and error.
-        // It has to do with the length of the sides A, B of an AABB enclosing the object's OBB with sides a, b:
-        // A = sin(t) * a + cos(t) * b
-        // B = cos(t) * a + sin(t) * b
-        let prev_scale_x = self.scale_x().unit();
-        let prev_scale_y = self.scale_y().unit();
-        let rotation = self.rotation();
-        let cos = f64::abs(f64::cos(rotation.into_radians()));
-        let sin = f64::abs(f64::sin(rotation.into_radians()));
-        let mut new_scale_x = aspect_ratio * (cos * target_scale_x + sin * target_scale_y)
-            / ((cos + aspect_ratio * sin) * (aspect_ratio * cos + sin));
-        let mut new_scale_y =
-            (sin * prev_scale_x + aspect_ratio * cos * prev_scale_y) / (aspect_ratio * cos + sin);
-
-        if !new_scale_x.is_finite() {
-            new_scale_x = 0.0;
+        if value.is_nan() || value < 0.0 {
+            return;
         }
 
-        if !new_scale_y.is_finite() {
-            new_scale_y = 0.0;
-        }
+        let (unit_width, unit_height) = unscaled_size(self);
+        let new_scale_x = value / unit_width;
+        let new_scale_y = self.height() / unit_height;
 
-        self.set_scale_x(Percent::from_unit(new_scale_x));
-        self.set_scale_y(Percent::from_unit(new_scale_y));
+        self.set_scale_x(Percent::from_unit(finite_or_zero(new_scale_x)));
+        self.set_scale_y(Percent::from_unit(finite_or_zero(new_scale_y)));
     }
 
     /// Gets the pixel height of the AABB containing this display object in local space.
@@ -1789,43 +1782,20 @@ pub trait TDisplayObject<'gc>:
 
     /// Sets the pixel height of this display object in local space.
     /// Set by the ActionScript `_height`/`height` properties.
-    /// This does odd things on rotated clips to match the behavior of Flash.
+    /// Each scale is set to the one at which the object, scaled uniformly, would be
+    /// `value` high or keep its current width, respectively. For rotated objects,
+    /// the resulting height generally isn't `value`.
     fn set_height(self, _context: &mut UpdateContext<'gc>, value: f64) {
-        let object_bounds = self.bounds(BoundsMode::Script);
-        let object_width = object_bounds.width().to_pixels();
-        let object_height = object_bounds.height().to_pixels();
-        let aspect_ratio = object_width / object_height;
-
-        let (target_scale_x, target_scale_y) = if object_height != 0.0 {
-            (value / object_width, value / object_height)
-        } else {
-            (0.0, 0.0)
-        };
-
-        // No idea about the derivation of this -- figured it out via lots of trial and error.
-        // It has to do with the length of the sides A, B of an AABB enclosing the object's OBB with sides a, b:
-        // A = sin(t) * a + cos(t) * b
-        // B = cos(t) * a + sin(t) * b
-        let prev_scale_x = self.scale_x().unit();
-        let prev_scale_y = self.scale_y().unit();
-        let rotation = self.rotation();
-        let cos = f64::abs(f64::cos(rotation.into_radians()));
-        let sin = f64::abs(f64::sin(rotation.into_radians()));
-        let mut new_scale_x =
-            (aspect_ratio * cos * prev_scale_x + sin * prev_scale_y) / (aspect_ratio * cos + sin);
-        let mut new_scale_y = aspect_ratio * (sin * target_scale_x + cos * target_scale_y)
-            / ((cos + aspect_ratio * sin) * (aspect_ratio * cos + sin));
-
-        if !new_scale_x.is_finite() {
-            new_scale_x = 0.0;
+        if value.is_nan() || value < 0.0 {
+            return;
         }
 
-        if !new_scale_y.is_finite() {
-            new_scale_y = 0.0;
-        }
+        let (unit_width, unit_height) = unscaled_size(self);
+        let new_scale_x = self.width() / unit_width;
+        let new_scale_y = value / unit_height;
 
-        self.set_scale_x(Percent::from_unit(new_scale_x));
-        self.set_scale_y(Percent::from_unit(new_scale_y));
+        self.set_scale_x(Percent::from_unit(finite_or_zero(new_scale_x)));
+        self.set_scale_y(Percent::from_unit(finite_or_zero(new_scale_y)));
     }
 
     #[no_dynamic]
