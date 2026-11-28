@@ -2611,10 +2611,18 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
     /// Construct objects placed on this frame.
     fn construct_frame(self, context: &mut UpdateContext<'gc>) {
+        // A root's class is only linked once the class initializers run by its
+        // `SymbolClass` tags have returned. They can run a nested frame (e.g. when
+        // constructing a button), which must not construct the root yet.
+        let waits_for_class = self.0.object2.get().is_none()
+            && self.is_root()
+            && self.0.shared.get().is_linking_symbol_classes();
+
         // AVM1 code expects to execute in line with timeline instructions, so
         // it's exempted from frame construction.
         if self.movie().is_action_script_3()
             && (self.frames_loaded() >= 1 || self.header_frames() == 0)
+            && !waits_for_class
         {
             let is_load_frame = !self.0.initialized();
             let needs_construction = if self.0.object2.get().is_none() {
@@ -4267,9 +4275,8 @@ impl<'gc, 'a> MovieClipShared<'gc> {
     #[inline]
     fn preload_symbol_class(&self, reader: &mut SwfStream<'a>) -> Result<(), Error> {
         let cur_frame = self.preload_progress.cur_preload_frame.get() - 1;
-        let mut shared = self.cell.borrow_mut();
-        let eager_tags = shared.eager_tags.entry(cur_frame).or_default();
         let num_symbols = reader.read_u16()?;
+        let mut symbolclass_names = Vec::with_capacity(num_symbols.into());
 
         for _ in 0..num_symbols {
             let id = reader.read_u16()?;
@@ -4281,8 +4288,16 @@ impl<'gc, 'a> MovieClipShared<'gc> {
             // Store the name and symbol with in the global data for this frame. The first time
             // we execute this frame (for any instance of this MovieClip), we will load the symbolclass
             // from `run_eager_script_and_symbol`
-            eager_tags.symbolclass_names.push((class_name.into(), id));
+            symbolclass_names.push((class_name.into(), id));
         }
+
+        // An empty entry would mean that the frame's symbol classes are being linked.
+        if !symbolclass_names.is_empty() {
+            let mut shared = self.cell.borrow_mut();
+            let eager_tags = shared.eager_tags.entry(cur_frame).or_default();
+            eager_tags.symbolclass_names.extend(symbolclass_names);
+        }
+
         Ok(())
     }
 }
@@ -4352,6 +4367,11 @@ impl<'gc, 'a> MovieClip<'gc> {
         }
 
         if !eager_tags.symbolclass_names.is_empty() {
+            self.0
+                .shared
+                .get()
+                .start_linking_symbol_classes(current_frame);
+
             let mut activation = Avm2Activation::from_nothing(context);
 
             let movie = self.movie();
@@ -4440,6 +4460,12 @@ impl<'gc, 'a> MovieClip<'gc> {
                 }
             }
         }
+
+        self.0
+            .shared
+            .get()
+            .finish_linking_symbol_classes(current_frame);
+
         for script in eager_scripts {
             if let Err(err) = script.globals(context) {
                 // TODO can we skip this Activation construction?
@@ -4742,6 +4768,12 @@ struct EagerTags {
     symbolclass_names: Vec<(WString, u16)>,
 }
 
+impl EagerTags {
+    fn is_empty(&self) -> bool {
+        self.abc_tags.is_empty() && self.symbolclass_names.is_empty()
+    }
+}
+
 impl<'gc> MovieClipShared<'gc> {
     fn empty(movie: SwfMovie<'gc>) -> Self {
         let mut s = Self::with_data(0, movie, SwfSlice::empty(movie), 1, None, None);
@@ -4804,12 +4836,51 @@ impl<'gc> MovieClipShared<'gc> {
 
     fn take_eager_tags(&self, frame: FrameNumber) -> Option<EagerTags> {
         let mut write = self.cell.borrow_mut();
+
+        // Don't remove the marker of symbol classes being linked.
+        if write
+            .eager_tags
+            .get(&frame)
+            .is_some_and(EagerTags::is_empty)
+        {
+            return None;
+        }
+
         let tags = write.eager_tags.remove(&frame);
         // Optimization: free memory when the last tag is removed.
         if tags.is_some() && write.eager_tags.is_empty() {
             write.eager_tags = HashMap::new();
         }
         tags
+    }
+
+    /// Marks the `SymbolClass` tags of `frame` as being linked, with an empty
+    /// entry: entries for unprocessed frames always contain some tags.
+    fn start_linking_symbol_classes(&self, frame: FrameNumber) {
+        self.cell
+            .borrow_mut()
+            .eager_tags
+            .insert(frame, EagerTags::default());
+    }
+
+    fn finish_linking_symbol_classes(&self, frame: FrameNumber) {
+        let mut write = self.cell.borrow_mut();
+
+        if write
+            .eager_tags
+            .get(&frame)
+            .is_some_and(EagerTags::is_empty)
+        {
+            write.eager_tags.remove(&frame);
+        }
+    }
+
+    fn is_linking_symbol_classes(&self) -> bool {
+        self.cell
+            .borrow()
+            .eager_tags
+            .values()
+            .any(EagerTags::is_empty)
     }
 }
 
