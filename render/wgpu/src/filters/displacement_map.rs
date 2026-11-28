@@ -7,7 +7,8 @@ use crate::surface::target::CommandTarget;
 use crate::utils::SampleCountMap;
 use bytemuck::{Pod, Zeroable};
 use ruffle_render::filters::{
-    DisplacementMapFilter as DisplacementMapFilterArgs, DisplacementMapFilterMode,
+    DisplacementMapFilter as DisplacementMapFilterArgs, DisplacementMapFilterComponent,
+    DisplacementMapFilterMode,
 };
 use std::sync::OnceLock;
 use wgpu::util::StagingBelt;
@@ -194,6 +195,15 @@ impl DisplacementMapFilter {
         let map_handle = filter.map_bitmap.clone()?;
         let map_texture = as_texture(&map_handle);
         let map_view = map_texture.texture.create_view(&Default::default());
+
+        let shader_component = |value| match DisplacementMapFilterComponent::from_value(value) {
+            Some(DisplacementMapFilterComponent::Red) => 1,
+            Some(DisplacementMapFilterComponent::Green) => 2,
+            Some(DisplacementMapFilterComponent::Blue) => 4,
+            Some(DisplacementMapFilterComponent::Alpha) => 8,
+            None => 0,
+        };
+
         staging_belt
             .write_buffer(draw_encoder, &self.uniform_buffer, 0, self.uniform_size)
             .copy_from_slice(bytemuck::cast_slice(&[DisplacementMapUniform {
@@ -203,7 +213,8 @@ impl DisplacementMapFilter {
                     f32::from(filter.color.b) / 255.0,
                     f32::from(filter.color.a) / 255.0,
                 ],
-                components: ((filter.component_x as u32) << 8) | (filter.component_y as u32),
+                components: (shader_component(filter.component_x) << 8)
+                    | shader_component(filter.component_y),
                 mode: match filter.mode {
                     DisplacementMapFilterMode::Wrap => 0,
                     DisplacementMapFilterMode::Clamp => 1,

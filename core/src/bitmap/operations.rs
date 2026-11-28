@@ -16,12 +16,14 @@ use image::{ExtendedColorType, ImageEncoder, ImageError};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{PixelRegion, PixelSnapping};
 use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
-use ruffle_render::filters::Filter;
+use ruffle_render::filters::{
+    DisplacementMapFilter, DisplacementMapFilterComponent, DisplacementMapFilterMode, Filter,
+};
 use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
 use std::cell::{Ref, RefMut};
-use swf::{BlendMode, ColorTransform, Fixed8, Rectangle, Twips};
+use swf::{BlendMode, ColorTransform, Fixed8, Fixed16, Rectangle, Twips};
 
 mod copy_on_cpu;
 
@@ -1232,6 +1234,352 @@ pub fn copy_pixels_with_alpha_source<'gc>(
         }
     }
     write.set_cpu_dirty(context.gc(), dest_region);
+}
+
+/// Where Flash Player reports the area that a filter affects when its source
+/// rectangle doesn't overlap the bitmap, on both axes.
+const NO_OVERLAP_POSITION: i32 = (1 << 27) - 1;
+
+/// How much a blur of size 1 grows a rectangle by in total, for each quality.
+/// These values were found by Dinnerbone and MrCheeze, and have to be f32s to
+/// match Flash Player.
+const BLUR_GROWTH_PER_QUALITY: [f32; 16] = [
+    0.0, 1.0, 2.1, 2.7, 3.1, 3.5, 3.8, 4.0, 4.2, 4.4, 4.6, 5.0, 6.0, 6.0, 7.0, 7.0,
+];
+
+/// How far the area that a filter affects reaches beyond each side of its
+/// source rectangle.
+struct FilterMargins {
+    left: i32,
+    top: i32,
+    right: i32,
+    bottom: i32,
+    /// Whether the area is clipped to the bitmap.
+    clip: bool,
+}
+
+impl FilterMargins {
+    /// The margins of a filter that grows its source rectangle by the same
+    /// amount on opposite sides, like a blur or a glow.
+    ///
+    /// ```text
+    ///  <-x->                    <-x->
+    /// ┌──────────────────────────────┐ ˄
+    /// │                              │ y
+    /// │     ┌──────────────────┐     │ ˅
+    /// │     │ source rectangle │     │
+    /// │     └──────────────────┘     │ ˄
+    /// │                              │ y
+    /// └──────────────────────────────┘ ˅
+    /// ```
+    fn symmetric(x: i32, y: i32) -> Self {
+        Self {
+            left: x,
+            top: y,
+            right: x,
+            bottom: y,
+            clip: false,
+        }
+    }
+
+    /// The margins of a filter that draws its blurred source offset by
+    /// `distance` at `angle`, and for a bevel also offset the opposite way.
+    ///
+    /// The blurred copy reaches `grow` pixels beyond the source rectangle on
+    /// each side, and is moved by `offset`, the distance in whole pixels. A
+    /// drop shadow or a gradient glow affects the source rectangle and the
+    /// copy:
+    ///
+    /// ```text
+    /// ┌────────────────────────────────┐
+    /// │        source rectangle        │
+    /// └────────────────────────────────┘
+    ///     ┌────────────────────────────────────────────┐
+    ///     │       blurred copy, moved by offset        │
+    ///     └────────────────────────────────────────────┘
+    ///                                   <-offset-><grow>
+    ///                                   <----right----->
+    /// ```
+    ///
+    /// Here, `left` is 0, because the copy doesn't reach beyond the left side
+    /// of the source rectangle; in general it's `max(0, grow - offset)`.
+    ///
+    /// A bevel also draws a copy moved by `-offset`, so it grows by the same
+    /// amount on opposite sides:
+    ///
+    /// ```text
+    /// <-----left----->
+    /// <grow><-offset->
+    /// ┌────────────────────────────────────────────┐
+    /// │       shadow copy, moved by -offset        │
+    /// └────────────────────────────────────────────┘
+    ///                 ┌────────────────────────────────┐
+    ///                 │        source rectangle        │
+    ///                 └────────────────────────────────┘
+    ///                     ┌────────────────────────────────────────────┐
+    ///                     │      highlight copy, moved by offset       │
+    ///                     └────────────────────────────────────────────┘
+    ///                                                   <-offset-><grow>
+    ///                                                   <----right----->
+    /// ```
+    fn offset(
+        blur_x: Fixed16,
+        blur_y: Fixed16,
+        passes: u8,
+        angle: Fixed16,
+        distance: Fixed16,
+        bevel: bool,
+    ) -> Self {
+        let grow_x = glow_growth(blur_x, passes);
+        let grow_y = glow_growth(blur_y, passes);
+        let (sin, cos) = angle.to_f64().sin_cos();
+        let offset_x = pixel_offset(distance.to_f64() * cos);
+        let offset_y = pixel_offset(distance.to_f64() * sin);
+
+        if bevel {
+            Self::symmetric(grow_x + offset_x.abs(), grow_y + offset_y.abs())
+        } else {
+            Self {
+                left: (grow_x - offset_x).max(0),
+                top: (grow_y - offset_y).max(0),
+                right: (grow_x + offset_x).max(0),
+                bottom: (grow_y + offset_y).max(0),
+                clip: false,
+            }
+        }
+    }
+
+    fn with_clip(self, clip: bool) -> Self {
+        Self { clip, ..self }
+    }
+}
+
+/// Returns the area that `filter` affects when it's applied to `source_rect`
+/// of a bitmap of the given size, as `BitmapData.generateFilterRect` reports it.
+///
+/// `source_rect` is in whole pixels. `displacement_map` is the map of a
+/// displacement map filter, if it has a valid one.
+pub fn generate_filter_rect<'gc>(
+    renderer: &mut dyn RenderBackend,
+    width: u32,
+    height: u32,
+    source_rect: Rectangle<i32>,
+    filter: &Filter,
+    displacement_map: Option<BitmapData<'gc>>,
+) -> Rectangle<i32> {
+    // Flash Player clips the area of inner filters, and of displacement map
+    // filters unless their mode is color, to the bitmap.
+    let margins = match filter {
+        Filter::BlurFilter(filter) => FilterMargins::symmetric(
+            blur_growth(filter.blur_x, filter.num_passes()),
+            blur_growth(filter.blur_y, filter.num_passes()),
+        ),
+        Filter::GlowFilter(filter) => FilterMargins::symmetric(
+            glow_growth(filter.blur_x, filter.num_passes()),
+            glow_growth(filter.blur_y, filter.num_passes()),
+        )
+        .with_clip(filter.is_inner()),
+        Filter::DropShadowFilter(filter) => FilterMargins::offset(
+            filter.blur_x,
+            filter.blur_y,
+            filter.num_passes(),
+            filter.angle,
+            filter.distance,
+            false,
+        )
+        .with_clip(filter.is_inner()),
+        Filter::GradientGlowFilter(filter) => FilterMargins::offset(
+            filter.blur_x,
+            filter.blur_y,
+            filter.num_passes(),
+            filter.angle,
+            filter.distance,
+            false,
+        )
+        .with_clip(filter.is_inner()),
+        Filter::BevelFilter(filter) => FilterMargins::offset(
+            filter.blur_x,
+            filter.blur_y,
+            filter.num_passes(),
+            filter.angle,
+            filter.distance,
+            true,
+        )
+        .with_clip(filter.is_inner()),
+        Filter::GradientBevelFilter(filter) => FilterMargins::offset(
+            filter.blur_x,
+            filter.blur_y,
+            filter.num_passes(),
+            filter.angle,
+            filter.distance,
+            true,
+        )
+        .with_clip(filter.is_inner()),
+        Filter::ConvolutionFilter(filter) => FilterMargins::symmetric(
+            i32::from(filter.num_matrix_cols / 2),
+            i32::from(filter.num_matrix_rows / 2),
+        ),
+        Filter::ColorMatrixFilter(_) => FilterMargins::symmetric(0, 0),
+        Filter::DisplacementMapFilter(filter) => {
+            let (x, y) = displacement_map.map_or((0, 0), |map| {
+                let map = map.read_area(
+                    PixelRegion::for_whole_size(map.width(), map.height()),
+                    renderer,
+                );
+
+                displacement_growth(map.pixels(), filter)
+            });
+
+            FilterMargins::symmetric(x, y)
+                .with_clip(filter.mode != DisplacementMapFilterMode::Color)
+        }
+        Filter::ShaderFilter(filter) => {
+            return generate_shader_filter_rect(
+                width,
+                height,
+                filter.left_extension,
+                filter.top_extension,
+                filter.right_extension,
+                filter.bottom_extension,
+            );
+        }
+    };
+
+    let source_rect = clip_to_bitmap(source_rect, width, height);
+    let rect = Rectangle {
+        x_min: source_rect.x_min.wrapping_sub(margins.left),
+        x_max: source_rect.x_max.wrapping_add(margins.right),
+        y_min: source_rect.y_min.wrapping_sub(margins.top),
+        y_max: source_rect.y_max.wrapping_add(margins.bottom),
+    };
+
+    if margins.clip {
+        clip_to_bitmap(rect, width, height)
+    } else {
+        rect
+    }
+}
+
+/// Returns the area that a shader filter with the given extensions affects:
+/// the whole bitmap, no matter the source rectangle.
+pub fn generate_shader_filter_rect(
+    width: u32,
+    height: u32,
+    left: i32,
+    top: i32,
+    right: i32,
+    bottom: i32,
+) -> Rectangle<i32> {
+    Rectangle {
+        x_min: left.wrapping_neg(),
+        x_max: (width as i32).wrapping_add(right),
+        y_min: top.wrapping_neg(),
+        y_max: (height as i32).wrapping_add(bottom),
+    }
+}
+
+/// Clips `rect` to a bitmap of the given size. If they don't overlap, the
+/// result is an empty rectangle where Flash Player puts it.
+fn clip_to_bitmap(rect: Rectangle<i32>, width: u32, height: u32) -> Rectangle<i32> {
+    let rect = Rectangle {
+        x_min: rect.x_min.max(0),
+        x_max: rect.x_max.min(width as i32),
+        y_min: rect.y_min.max(0),
+        y_max: rect.y_max.min(height as i32),
+    };
+
+    if rect.x_min > rect.x_max || rect.y_min > rect.y_max {
+        Rectangle {
+            x_min: NO_OVERLAP_POSITION,
+            x_max: NO_OVERLAP_POSITION,
+            y_min: NO_OVERLAP_POSITION,
+            y_max: NO_OVERLAP_POSITION,
+        }
+    } else {
+        rect
+    }
+}
+
+/// How many pixels a blur filter grows a rectangle by on each side.
+fn blur_growth(size: Fixed16, passes: u8) -> i32 {
+    ((size.to_f64().max(1.0) * growth_per_size(passes)).round() / 2.0).round() as i32
+}
+
+/// How many pixels the blur of a glow, drop shadow, bevel or gradient filter
+/// grows a rectangle by on each side. This is rounded differently from the
+/// blur filter.
+fn glow_growth(size: Fixed16, passes: u8) -> i32 {
+    (size.to_f64().max(1.0) * growth_per_size(passes) / 2.0 + 0.5).round_ties_even() as i32
+}
+
+fn growth_per_size(passes: u8) -> f64 {
+    f64::from(BLUR_GROWTH_PER_QUALITY[usize::from(passes.min(15))])
+}
+
+/// Flash Player moves the offset copy of a drop shadow or bevel by whole
+/// pixels after rounding the offset to 1/256 of a pixel. It rounds down,
+/// except for offsets of more than 256 pixels to the left or up, which it
+/// rounds towards zero.
+fn pixel_offset(offset: f64) -> i32 {
+    let offset = (offset * 256.0).round() / 256.0;
+
+    if offset < -256.0 {
+        offset.trunc() as i32
+    } else {
+        offset.floor() as i32
+    }
+}
+
+/// How many pixels a displacement map filter grows a rectangle by on each
+/// side, horizontally and vertically: as far as the map can move a pixel,
+/// which depends on the value of each component furthest from 128.
+fn displacement_growth(map: &[Color], filter: &DisplacementMapFilter) -> (i32, i32) {
+    fn channel(component: u32) -> Option<fn(&Color) -> u8> {
+        let channel = match DisplacementMapFilterComponent::from_value(component)? {
+            DisplacementMapFilterComponent::Red => Color::red,
+            DisplacementMapFilterComponent::Green => Color::green,
+            DisplacementMapFilterComponent::Blue => Color::blue,
+            DisplacementMapFilterComponent::Alpha => Color::alpha,
+        };
+
+        Some(channel)
+    }
+
+    fn growth(max_deviation: Option<u8>, scale: f32) -> i32 {
+        let Some(max_deviation) = max_deviation else {
+            return 0;
+        };
+
+        if scale.is_nan() {
+            return 0;
+        }
+
+        let scale = f64::from(scale.abs().min(65535.0));
+
+        (f64::from(max_deviation) * scale / 256.0).floor() as i32
+    }
+
+    let channel_x = channel(filter.component_x);
+    let channel_y = channel(filter.component_y);
+    let mut deviation_x = channel_x.map(|_| 0);
+    let mut deviation_y = channel_y.map(|_| 0);
+
+    for color in map {
+        let color = color.to_un_multiplied_alpha();
+
+        if let (Some(channel), Some(deviation)) = (channel_x, &mut deviation_x) {
+            *deviation = (*deviation).max(channel(&color).abs_diff(128));
+        }
+
+        if let (Some(channel), Some(deviation)) = (channel_y, &mut deviation_y) {
+            *deviation = (*deviation).max(channel(&color).abs_diff(128));
+        }
+    }
+
+    (
+        growth(deviation_x, filter.scale_x),
+        growth(deviation_y, filter.scale_y),
+    )
 }
 
 pub fn apply_filter<'gc>(

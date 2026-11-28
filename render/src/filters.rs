@@ -156,6 +156,19 @@ pub enum DisplacementMapFilterComponent {
     Red,
 }
 
+impl DisplacementMapFilterComponent {
+    /// The channel that a component value selects, if any.
+    pub fn from_value(value: u32) -> Option<Self> {
+        match value {
+            1 => Some(Self::Red),
+            2 => Some(Self::Green),
+            4 => Some(Self::Blue),
+            8 => Some(Self::Alpha),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq)]
 pub enum DisplacementMapFilterMode {
     Clamp,
@@ -168,8 +181,8 @@ pub enum DisplacementMapFilterMode {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct DisplacementMapFilter {
     pub color: Color,
-    pub component_x: u8,
-    pub component_y: u8,
+    pub component_x: u32,
+    pub component_y: u32,
     pub map_bitmap: Option<BitmapHandle>,
     pub map_point: (i32, i32),
     pub mode: DisplacementMapFilterMode,

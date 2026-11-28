@@ -1,0 +1,256 @@
+// How far a blur grows the rectangle per quality, for sizes 0 to 6 in steps of 0.25
+quality 0: 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+quality 1: 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 3 3 3 3 3 3 3
+quality 2: 1 1 1 1 1 2 2 2 2 3 3 3 3 4 4 4 4 5 5 5 5 6 6 6 7
+quality 3: 2 2 2 2 2 2 2 3 3 3 4 4 4 5 5 5 6 6 6 7 7 7 8 8 8
+quality 4: 2 2 2 2 2 2 3 3 3 4 4 5 5 5 6 6 6 7 7 8 8 8 9 9 10
+quality 5: 2 2 2 2 2 2 3 3 4 4 5 5 6 6 6 7 7 8 8 9 9 9 10 10 11
+quality 6: 2 2 2 2 2 3 3 4 4 5 5 5 6 6 7 7 8 8 9 9 10 10 11 11 12
+quality 7: 2 2 2 2 2 3 3 4 4 5 5 6 6 7 7 8 8 9 9 10 10 11 11 12 12
+quality 8: 2 2 2 2 2 3 3 4 4 5 5 6 7 7 8 8 9 9 10 10 11 11 12 12 13
+quality 9: 2 2 2 2 2 3 4 4 5 5 6 6 7 7 8 9 9 10 10 11 11 12 12 13 13
+quality 10: 3 3 3 3 3 3 4 4 5 5 6 7 7 8 8 9 9 10 11 11 12 12 13 13 14
+quality 11: 3 3 3 3 3 3 4 5 5 6 7 7 8 8 9 10 10 11 12 12 13 13 14 15 15
+quality 12: 3 3 3 3 3 4 5 6 6 7 8 9 9 10 11 12 12 13 14 15 15 16 17 18 18
+quality 13: 3 3 3 3 3 4 5 6 6 7 8 9 9 10 11 12 12 13 14 15 15 16 17 18 18
+quality 14: 4 4 4 4 4 5 6 6 7 8 9 10 11 12 13 13 14 15 16 17 18 19 20 20 21
+quality 15: 4 4 4 4 4 5 6 6 7 8 9 10 11 12 13 13 14 15 16 17 18 19 20 20 21
+// How far a glow grows the rectangle per quality, for sizes 0 to 6 in steps of 0.25
+quality 0: 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+quality 1: 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 3 3 3 3 3 3 3 4
+quality 2: 2 2 2 2 2 2 2 2 3 3 3 3 4 4 4 4 5 5 5 5 6 6 6 7 7
+quality 3: 2 2 2 2 2 2 3 3 3 4 4 4 5 5 5 6 6 6 7 7 7 8 8 8 9
+quality 4: 2 2 2 2 2 2 3 3 4 4 4 5 5 6 6 6 7 7 7 8 8 9 9 9 10
+quality 5: 2 2 2 2 2 3 3 4 4 4 5 5 6 6 7 7 8 8 8 9 9 10 10 11 11
+quality 6: 2 2 2 2 2 3 3 4 4 5 5 6 6 7 7 8 8 9 9 10 10 10 11 11 12
+quality 7: 2 2 2 2 2 3 4 4 4 5 6 6 6 7 8 8 8 9 10 10 10 11 12 12 12
+quality 8: 3 3 3 3 3 3 4 4 5 5 6 6 7 7 8 8 9 9 10 10 11 12 12 13 13
+quality 9: 3 3 3 3 3 3 4 4 5 5 6 7 7 8 8 9 9 10 10 11 12 12 13 13 14
+quality 10: 3 3 3 3 3 3 4 5 5 6 6 7 7 8 9 9 10 10 11 11 12 13 13 14 14
+quality 11: 3 3 3 3 3 4 4 5 6 6 7 7 8 9 9 10 10 11 12 12 13 14 14 15 16
+quality 12: 4 4 4 4 4 4 5 6 6 7 8 9 10 10 11 12 12 13 14 15 16 16 17 18 18
+quality 13: 4 4 4 4 4 4 5 6 6 7 8 9 10 10 11 12 12 13 14 15 16 16 17 18 18
+quality 14: 4 4 4 4 4 5 6 7 8 8 9 10 11 12 13 14 14 15 16 17 18 19 20 21 22
+quality 15: 4 4 4 4 4 5 6 7 8 8 9 10 11 12 13 14 14 15 16 17 18 19 20 21 22
+// Blur
+blur 10x2 quality 2: (x=-1, y=8, w=47, h=29)
+blur 255 quality 15: (x=-883, y=-883, w=1811, h=1811)
+// Glow
+glow 6 quality 2: (x=3, y=3, w=39, h=39)
+glow 6 quality 2, inner: (x=3, y=3, w=39, h=39)
+glow 6 quality 2, knockout: (x=3, y=3, w=39, h=39)
+// Filters with an offset copy
+drop shadow, distance 0, angle 0: (x=8, y=8, w=29, h=29)
+gradient glow, distance 0, angle 0: (x=8, y=8, w=29, h=29)
+bevel, distance 0, angle 0: (x=8, y=8, w=29, h=29)
+gradient bevel, distance 0, angle 0: (x=8, y=8, w=29, h=29)
+drop shadow, distance 0, angle 30: (x=8, y=8, w=29, h=29)
+gradient glow, distance 0, angle 30: (x=8, y=8, w=29, h=29)
+bevel, distance 0, angle 30: (x=8, y=8, w=29, h=29)
+gradient bevel, distance 0, angle 30: (x=8, y=8, w=29, h=29)
+drop shadow, distance 0, angle 45: (x=8, y=8, w=29, h=29)
+gradient glow, distance 0, angle 45: (x=8, y=8, w=29, h=29)
+bevel, distance 0, angle 45: (x=8, y=8, w=29, h=29)
+gradient bevel, distance 0, angle 45: (x=8, y=8, w=29, h=29)
+drop shadow, distance 0, angle 90: (x=8, y=8, w=29, h=29)
+gradient glow, distance 0, angle 90: (x=8, y=8, w=29, h=29)
+bevel, distance 0, angle 90: (x=8, y=8, w=29, h=29)
+gradient bevel, distance 0, angle 90: (x=8, y=8, w=29, h=29)
+drop shadow, distance 0, angle 135: (x=8, y=8, w=29, h=29)
+gradient glow, distance 0, angle 135: (x=8, y=8, w=29, h=29)
+bevel, distance 0, angle 135: (x=8, y=8, w=29, h=29)
+gradient bevel, distance 0, angle 135: (x=8, y=8, w=29, h=29)
+drop shadow, distance 0, angle 180: (x=8, y=8, w=29, h=29)
+gradient glow, distance 0, angle 180: (x=8, y=8, w=29, h=29)
+bevel, distance 0, angle 180: (x=8, y=8, w=29, h=29)
+gradient bevel, distance 0, angle 180: (x=8, y=8, w=29, h=29)
+drop shadow, distance 0, angle 270: (x=8, y=8, w=29, h=29)
+gradient glow, distance 0, angle 270: (x=8, y=8, w=29, h=29)
+bevel, distance 0, angle 270: (x=8, y=8, w=29, h=29)
+gradient bevel, distance 0, angle 270: (x=8, y=8, w=29, h=29)
+drop shadow, distance 3, angle 0: (x=10, y=8, w=30, h=29)
+gradient glow, distance 3, angle 0: (x=10, y=8, w=30, h=29)
+bevel, distance 3, angle 0: (x=5, y=8, w=35, h=29)
+gradient bevel, distance 3, angle 0: (x=5, y=8, w=35, h=29)
+drop shadow, distance 3, angle 30: (x=10, y=9, w=29, h=29)
+gradient glow, distance 3, angle 30: (x=10, y=9, w=29, h=29)
+bevel, distance 3, angle 30: (x=6, y=7, w=33, h=31)
+gradient bevel, distance 3, angle 30: (x=6, y=7, w=33, h=31)
+drop shadow, distance 3, angle 45: (x=10, y=10, w=29, h=29)
+gradient glow, distance 3, angle 45: (x=10, y=10, w=29, h=29)
+bevel, distance 3, angle 45: (x=6, y=6, w=33, h=33)
+gradient bevel, distance 3, angle 45: (x=6, y=6, w=33, h=33)
+drop shadow, distance 3, angle 90: (x=8, y=10, w=29, h=30)
+gradient glow, distance 3, angle 90: (x=8, y=10, w=29, h=30)
+bevel, distance 3, angle 90: (x=8, y=5, w=29, h=35)
+gradient bevel, distance 3, angle 90: (x=8, y=5, w=29, h=35)
+drop shadow, distance 3, angle 135: (x=5, y=10, w=30, h=29)
+gradient glow, distance 3, angle 135: (x=5, y=10, w=30, h=29)
+bevel, distance 3, angle 135: (x=5, y=6, w=35, h=33)
+gradient bevel, distance 3, angle 135: (x=5, y=6, w=35, h=33)
+drop shadow, distance 3, angle 180: (x=5, y=8, w=30, h=29)
+gradient glow, distance 3, angle 180: (x=5, y=8, w=30, h=29)
+bevel, distance 3, angle 180: (x=5, y=8, w=35, h=29)
+gradient bevel, distance 3, angle 180: (x=5, y=8, w=35, h=29)
+drop shadow, distance 3, angle 270: (x=8, y=5, w=29, h=30)
+gradient glow, distance 3, angle 270: (x=8, y=5, w=29, h=30)
+bevel, distance 3, angle 270: (x=8, y=5, w=29, h=35)
+gradient bevel, distance 3, angle 270: (x=8, y=5, w=29, h=35)
+drop shadow, distance 10, angle 0: (x=10, y=8, w=37, h=29)
+gradient glow, distance 10, angle 0: (x=10, y=8, w=37, h=29)
+bevel, distance 10, angle 0: (x=0, y=8, w=47, h=29)
+gradient bevel, distance 10, angle 0: (x=0, y=8, w=47, h=29)
+drop shadow, distance 10, angle 30: (x=10, y=10, w=35, h=32)
+gradient glow, distance 10, angle 30: (x=10, y=10, w=35, h=32)
+bevel, distance 10, angle 30: (x=0, y=3, w=45, h=39)
+gradient bevel, distance 10, angle 30: (x=0, y=3, w=45, h=39)
+drop shadow, distance 10, angle 45: (x=10, y=10, w=34, h=34)
+gradient glow, distance 10, angle 45: (x=10, y=10, w=34, h=34)
+bevel, distance 10, angle 45: (x=1, y=1, w=43, h=43)
+gradient bevel, distance 10, angle 45: (x=1, y=1, w=43, h=43)
+drop shadow, distance 10, angle 90: (x=8, y=10, w=29, h=37)
+gradient glow, distance 10, angle 90: (x=8, y=10, w=29, h=37)
+bevel, distance 10, angle 90: (x=8, y=0, w=29, h=47)
+gradient bevel, distance 10, angle 90: (x=8, y=0, w=29, h=47)
+drop shadow, distance 10, angle 135: (x=0, y=10, w=35, h=34)
+gradient glow, distance 10, angle 135: (x=0, y=10, w=35, h=34)
+bevel, distance 10, angle 135: (x=0, y=1, w=45, h=43)
+gradient bevel, distance 10, angle 135: (x=0, y=1, w=45, h=43)
+drop shadow, distance 10, angle 180: (x=-2, y=8, w=37, h=29)
+gradient glow, distance 10, angle 180: (x=0, y=8, w=35, h=29)
+bevel, distance 10, angle 180: (x=0, y=8, w=47, h=29)
+gradient bevel, distance 10, angle 180: (x=0, y=8, w=47, h=29)
+drop shadow, distance 10, angle 270: (x=8, y=-2, w=29, h=37)
+gradient glow, distance 10, angle 270: (x=8, y=0, w=29, h=35)
+bevel, distance 10, angle 270: (x=8, y=0, w=29, h=47)
+gradient bevel, distance 10, angle 270: (x=8, y=0, w=29, h=47)
+drop shadow, distance -5, angle 0: (x=3, y=8, w=32, h=29)
+gradient glow, distance -5, angle 0: (x=3, y=8, w=32, h=29)
+bevel, distance -5, angle 0: (x=3, y=8, w=39, h=29)
+gradient bevel, distance -5, angle 0: (x=3, y=8, w=39, h=29)
+drop shadow, distance -5, angle 30: (x=3, y=5, w=32, h=30)
+gradient glow, distance -5, angle 30: (x=3, y=5, w=32, h=30)
+bevel, distance -5, angle 30: (x=3, y=5, w=39, h=35)
+gradient bevel, distance -5, angle 30: (x=3, y=5, w=39, h=35)
+drop shadow, distance -5, angle 45: (x=4, y=4, w=31, h=31)
+gradient glow, distance -5, angle 45: (x=4, y=4, w=31, h=31)
+bevel, distance -5, angle 45: (x=4, y=4, w=37, h=37)
+gradient bevel, distance -5, angle 45: (x=4, y=4, w=37, h=37)
+drop shadow, distance -5, angle 90: (x=8, y=3, w=29, h=32)
+gradient glow, distance -5, angle 90: (x=8, y=3, w=29, h=32)
+bevel, distance -5, angle 90: (x=8, y=3, w=29, h=39)
+gradient bevel, distance -5, angle 90: (x=8, y=3, w=29, h=39)
+drop shadow, distance -5, angle 135: (x=10, y=4, w=30, h=31)
+gradient glow, distance -5, angle 135: (x=10, y=4, w=30, h=31)
+bevel, distance -5, angle 135: (x=5, y=4, w=35, h=37)
+gradient bevel, distance -5, angle 135: (x=5, y=4, w=35, h=37)
+drop shadow, distance -5, angle 180: (x=10, y=8, w=32, h=29)
+gradient glow, distance -5, angle 180: (x=10, y=8, w=32, h=29)
+bevel, distance -5, angle 180: (x=3, y=8, w=39, h=29)
+gradient bevel, distance -5, angle 180: (x=3, y=8, w=39, h=29)
+drop shadow, distance -5, angle 270: (x=8, y=10, w=29, h=32)
+gradient glow, distance -5, angle 270: (x=8, y=10, w=29, h=32)
+bevel, distance -5, angle 270: (x=8, y=3, w=29, h=39)
+gradient bevel, distance -5, angle 270: (x=8, y=3, w=29, h=39)
+drop shadow, blur 2x6 quality 2: (x=9, y=5, w=31, h=39)
+drop shadow, inner, knockout: (x=10, y=10, w=29, h=29)
+bevel, outer: (x=6, y=6, w=33, h=33)
+// Convolution
+convolution 0x0: (x=10, y=10, w=25, h=25)
+convolution 1x1: (x=10, y=10, w=25, h=25)
+convolution 2x2: (x=9, y=9, w=27, h=27)
+convolution 3x3: (x=9, y=9, w=27, h=27)
+convolution 5x1: (x=8, y=10, w=29, h=25)
+convolution 4x6: (x=8, y=7, w=29, h=31)
+// Inner and outer filters near the corner
+glow, inner false: (x=80, y=60, w=30, h=30)
+drop shadow, inner false: (x=90, y=70, w=41, h=41)
+glow, inner true: (x=80, y=60, w=20, h=20)
+drop shadow, inner true: (x=90, y=70, w=10, h=10)
+bevel, inner: (x=59, y=39, w=41, h=41)
+gradient glow, inner: (x=90, y=70, w=10, h=10)
+gradient bevel, inner: (x=59, y=39, w=41, h=41)
+bevel, outer: (x=59, y=39, w=72, h=72)
+gradient glow, outer: (x=90, y=70, w=41, h=41)
+gradient bevel, outer: (x=59, y=39, w=72, h=72)
+bevel, full: (x=59, y=39, w=72, h=72)
+gradient glow, full: (x=90, y=70, w=41, h=41)
+gradient bevel, full: (x=59, y=39, w=72, h=72)
+// Offset copies at large negative distances to the left
+drop shadow, distance -255.5: (x=-247, y=9, w=282, h=27)
+bevel, distance -255.5: (x=-247, y=9, w=539, h=27)
+drop shadow, distance -256: (x=-247, y=9, w=282, h=27)
+bevel, distance -256: (x=-247, y=9, w=539, h=27)
+drop shadow, distance -256.004: (x=-247, y=9, w=282, h=27)
+bevel, distance -256.004: (x=-247, y=9, w=539, h=27)
+drop shadow, distance -261.796: (x=-252, y=9, w=287, h=27)
+bevel, distance -261.796: (x=-252, y=9, w=549, h=27)
+drop shadow, distance -1000.5: (x=-991, y=9, w=1026, h=27)
+bevel, distance -1000.5: (x=-991, y=9, w=2027, h=27)
+// Displacement maps
+displacement map, mode wrap: (x=0, y=6, w=100, h=68)
+displacement map, mode clamp: (x=0, y=6, w=100, h=68)
+displacement map, mode ignore: (x=0, y=6, w=100, h=68)
+displacement map, mode color: (x=-9, y=6, w=118, h=68)
+displacement map, gray: (x=40, y=30, w=20, h=20)
+displacement map, red x, green y: (x=-9, y=16, w=118, h=48)
+displacement map, transparent: (x=-10, y=-20, w=120, h=120)
+displacement map, scale -100: (x=-9, y=-19, w=118, h=118)
+displacement map, scale 2.01: (x=40, y=30, w=20, h=20)
+displacement map, scale 2.02: (x=39, y=29, w=22, h=22)
+displacement map, scale 65535: (x=-32471, y=-32481, w=65042, h=65042)
+displacement map, scale 1000000000: (x=-32471, y=-32481, w=65042, h=65042)
+displacement map, scale Infinity: (x=-32471, y=-32481, w=65042, h=65042)
+displacement map, scale NaN: (x=40, y=30, w=20, h=20)
+displacement map, component 0: (x=40, y=30, w=20, h=20)
+displacement map, component 3: (x=40, y=30, w=20, h=20)
+displacement map, component 16: (x=40, y=30, w=20, h=20)
+displacement map, component 257: (x=40, y=30, w=20, h=20)
+displacement map, component -254: (x=40, y=30, w=20, h=20)
+displacement map, map point (80, 60): (x=-9, y=6, w=118, h=68)
+displacement map, map point (-2, -2): (x=-9, y=6, w=118, h=68)
+displacement map, map point (45, 35): (x=-9, y=6, w=118, h=68)
+displacement map, no map: (x=40, y=30, w=20, h=20)
+displacement map, disposed map: (x=40, y=30, w=20, h=20)
+// Shader filters
+shader without extensions: (x=0, y=0, w=100, h=80)
+shader with extensions: (x=-5, y=-6, w=112, h=94)
+// Color matrix
+color matrix: (x=10, y=10, w=25, h=25)
+// Fractional source rectangles
+10.4, 10.6, 25.3, 25.2: (x=8, y=9, w=30, h=29)
+10.49, 10.51, 20.02, 20: (x=8, y=9, w=25, h=24)
+x and width 0.5: (x=-2, y=18, w=5, h=14)
+width 0.5: (x=18, y=18, w=4, h=14)
+x and width 1.5: (x=0, y=18, w=5, h=14)
+width 1.5: (x=18, y=18, w=6, h=14)
+x and width 10.5: (x=8, y=18, w=15, h=14)
+width 10.5: (x=18, y=18, w=14, h=14)
+x and width 11.5: (x=10, y=18, w=15, h=14)
+width 11.5: (x=18, y=18, w=16, h=14)
+x and width 12.5: (x=10, y=18, w=17, h=14)
+width 12.5: (x=18, y=18, w=16, h=14)
+x and width 13.5: (x=12, y=18, w=17, h=14)
+width 13.5: (x=18, y=18, w=18, h=14)
+// Source rectangles partly or fully outside the bitmap
+whole bitmap: (x=-2, y=-2, w=104, h=84)
+covering the bitmap: (x=-2, y=-2, w=104, h=84)
+over the right and bottom edges: (x=88, y=68, w=14, h=14)
+over the left and top edges: (x=-2, y=-2, w=14, h=19)
+starting at the right edge: (x=98, y=8, w=4, h=14)
+empty: (x=8, y=8, w=4, h=4)
+negative size: (x=134217725, y=134217725, w=4, h=4)
+outside: (x=134217725, y=134217725, w=4, h=4)
+outside, color matrix: (x=134217727, y=134217727, w=0, h=0)
+// Source rectangles with non-finite or huge values
+(x=NaN, y=0, w=10, h=10): (x=-2, y=-2, w=4, h=14)
+(x=0, y=0, w=Infinity, h=10): (x=-2, y=-2, w=104, h=14)
+(x=0, y=0, w=2147483648, h=2147483648): (x=-2, y=-2, w=104, h=84)
+(x=-2147483648, y=-2147483648, w=4294967296, h=4294967296): (x=-2, y=-2, w=104, h=84)
+(x=2147483640, y=0, w=100, h=10): (x=134217725, y=134217725, w=4, h=4)
+(x=-2147483649, y=0, w=2147483700, h=10): (x=-2, y=-2, w=55, h=14)
+// Invalid arguments
+null source rectangle: TypeError: Error #2007: Parameter sourceRect must be non-null.
+null filter: TypeError: Error #2007: Parameter filterObject must be non-null.
+disposed bitmap: ArgumentError: Error #2015: Invalid BitmapData.
+disposed bitmap, null source rectangle: ArgumentError: Error #2015: Invalid BitmapData.

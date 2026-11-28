@@ -1,0 +1,52 @@
+// Filters
+blur 4 quality 1: (x=8, y=8, w=29, h=29)
+blur 4 quality 3: (x=4, y=4, w=37, h=37)
+blur 0 quality 1: (x=9, y=9, w=27, h=27)
+glow 6 quality 2: (x=3, y=3, w=39, h=39)
+convolution 4x6: (x=8, y=7, w=29, h=31)
+color matrix: (x=10, y=10, w=25, h=25)
+drop shadow: (x=-3, y=10, w=38, h=37)
+gradient glow: (x=0, y=10, w=35, h=37)
+bevel: (x=0, y=0, w=48, h=47)
+gradient bevel: (x=0, y=0, w=48, h=47)
+drop shadow, distance -1000.5: (x=-991, y=9, w=1026, h=27)
+glow: (x=80, y=60, w=30, h=30)
+inner glow: (x=80, y=60, w=20, h=20)
+outer bevel: (x=59, y=39, w=72, h=72)
+displacement map: (x=0, y=6, w=100, h=68)
+displacement map, color mode: (x=-9, y=6, w=118, h=68)
+displacement map, invalid component: (x=40, y=30, w=20, h=20)
+displacement map, component 257: (x=40, y=30, w=20, h=20)
+// Source rectangles
+fractional: (x=8, y=9, w=24, h=24)
+over the right and bottom edges: (x=88, y=68, w=14, h=14)
+outside: (x=134217725, y=134217725, w=4, h=4)
+plain object: (x=8, y=8, w=29, h=29)
+NaN: (x=134217725, y=134217725, w=4, h=4)
+string: (x=134217725, y=134217725, w=4, h=4)
+undefined height: (x=134217725, y=134217725, w=4, h=4)
+out of range: (x=134217725, y=134217725, w=4, h=4)
+maximum x: (x=134217725, y=134217725, w=4, h=4)
+maximum width: (x=134217725, y=134217725, w=4, h=4)
+negative fractional width: (x=134217725, y=134217725, w=4, h=4)
+x -10, width -1: (x=134217727, y=134217727, w=0, h=0)
+y -10, height -1: (x=134217727, y=134217727, w=0, h=0)
+x -1, width 0.5: (x=0, y=10, w=0, h=20)
+y -1, height 0.5: (x=10, y=0, w=20, h=0)
+x 0, width -0.5: (x=0, y=10, w=0, h=20)
+y 0, height -0.5: (x=10, y=0, w=20, h=0)
+x NaN, width 2147483660: (x=0, y=10, w=12, h=20)
+y NaN, height 2147483660: (x=10, y=0, w=20, h=12)
+x -2147483648, width 2147483700: (x=0, y=10, w=52, h=20)
+y -2147483648, height 2147483700: (x=10, y=0, w=20, h=52)
+x -10, width 2147483658: (x=134217727, y=134217727, w=0, h=0)
+y -10, height 2147483658: (x=134217727, y=134217727, w=0, h=0)
+inherited properties: -1
+result is a Rectangle: true
+// Invalid arguments
+no source rectangle: -1
+no filter: -2
+plain object as filter: -2
+no arguments: -1
+only a source rectangle: -1
+disposed bitmap: -1

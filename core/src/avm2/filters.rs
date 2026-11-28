@@ -504,8 +504,8 @@ fn avm2_to_displacement_map_filter<'gc>(
         };
     Ok(Filter::DisplacementMapFilter(DisplacementMapFilter {
         color: Color::from_rgb(color, (alpha * 255.0) as u8),
-        component_x: component_x as u8,
-        component_y: component_y as u8,
+        component_x,
+        component_y,
         map_bitmap,
         map_point,
         mode,
@@ -828,25 +828,33 @@ fn gradient_filter_to_avm2<'gc>(
     )
 }
 
+/// Returns the left, top, right and bottom extensions of a `ShaderFilter`.
+pub fn shader_filter_extensions<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    object: Object<'gc>,
+) -> Result<(i32, i32, i32, i32), Error<'gc>> {
+    Ok((
+        object
+            .get_slot(shader_filter_slots::_LEFT_EXTENSION)
+            .coerce_to_i32(activation)?,
+        object
+            .get_slot(shader_filter_slots::_TOP_EXTENSION)
+            .coerce_to_i32(activation)?,
+        object
+            .get_slot(shader_filter_slots::_RIGHT_EXTENSION)
+            .coerce_to_i32(activation)?,
+        object
+            .get_slot(shader_filter_slots::_BOTTOM_EXTENSION)
+            .coerce_to_i32(activation)?,
+    ))
+}
+
 fn avm2_to_shader_filter<'gc>(
     activation: &mut Activation<'_, 'gc>,
     object: Object<'gc>,
 ) -> Result<ShaderFilter<'static>, Error<'gc>> {
-    let bottom_extension = object
-        .get_slot(shader_filter_slots::_BOTTOM_EXTENSION)
-        .coerce_to_i32(activation)?;
-
-    let left_extension = object
-        .get_slot(shader_filter_slots::_LEFT_EXTENSION)
-        .coerce_to_i32(activation)?;
-
-    let right_extension = object
-        .get_slot(shader_filter_slots::_RIGHT_EXTENSION)
-        .coerce_to_i32(activation)?;
-
-    let top_extension = object
-        .get_slot(shader_filter_slots::_TOP_EXTENSION)
-        .coerce_to_i32(activation)?;
+    let (left_extension, top_extension, right_extension, bottom_extension) =
+        shader_filter_extensions(activation, object)?;
 
     let shader_obj = object
         .get_slot(shader_filter_slots::_SHADER)
