@@ -1,5 +1,4 @@
 package flash.geom {
-    import __ruffle__.stub_getter;
     import __ruffle__.stub_method;
 
     import flash.display.DisplayObject;
@@ -19,10 +18,7 @@ package flash.geom {
         public native function get matrix():Matrix;
         public native function set matrix(value:Matrix):void;
 
-        public function get concatenatedColorTransform():ColorTransform {
-            stub_getter("flash.geom.Transform", "concatenatedColorTransform");
-            return new ColorTransform();
-        }
+        public native function get concatenatedColorTransform():ColorTransform;
 
         public native function get concatenatedMatrix():Matrix;
         public native function get pixelBounds():Rectangle;
