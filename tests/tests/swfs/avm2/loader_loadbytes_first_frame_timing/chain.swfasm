@@ -1,0 +1,12 @@
+Swf(
+    version: 43,
+    stage: (width: 200.0, height: 200.0),
+    frame_rate: 24.0,
+    tags: [
+        FileAttributes(action_script_3: true),
+        DoAbc(Asc(file: "Chain.as")),
+        SymbolClass([(character: 0, name: "Chain")]),
+        ShowFrame,
+        End,
+    ],
+)

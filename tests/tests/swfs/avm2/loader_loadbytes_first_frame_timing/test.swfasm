@@ -1,0 +1,16 @@
+Swf(
+    version: 43,
+    stage: (width: 200.0, height: 200.0),
+    frame_rate: 24.0,
+    tags: [
+        FileAttributes(action_script_3: true),
+        DefineBinaryData(id: 1, data: File("loadee.swf")),
+        DefineBinaryData(id: 2, data: File("chain.swf")),
+        DoAbc(Asc(r#"package { import flash.utils.ByteArray; public class LoadeeBytes extends ByteArray {} }"#)),
+        DoAbc(Asc(r#"package { import flash.utils.ByteArray; public class ChainBytes extends ByteArray {} }"#)),
+        DoAbc(Asc(file: "Test.as", scripts: ["Log.as"])),
+        SymbolClass([(character: 0, name: "Test"), (character: 1, name: "LoadeeBytes"), (character: 2, name: "ChainBytes")]),
+        ShowFrame,
+        End,
+    ],
+)

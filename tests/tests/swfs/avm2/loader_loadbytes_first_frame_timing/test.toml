@@ -1,0 +1,16 @@
+num_ticks = 11
+
+[[compilers]]
+type = "Swfasm"
+source = "loadee.swfasm"
+target = "loadee.swf"
+
+[[compilers]]
+type = "Swfasm"
+source = "chain.swfasm"
+target = "chain.swf"
+
+[[compilers]]
+type = "Swfasm"
+source = "test.swfasm"
+target = "test.swf"
