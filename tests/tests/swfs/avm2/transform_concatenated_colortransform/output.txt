@@ -1,0 +1,31 @@
+offChild: (redMultiplier=0.5, greenMultiplier=0.25, blueMultiplier=0.75, alphaMultiplier=0.796875, redOffset=10, greenOffset=20, blueOffset=30, alphaOffset=40)
+offParent -> offChild: (redMultiplier=0.5, greenMultiplier=0.25, blueMultiplier=0.75, alphaMultiplier=0.796875, redOffset=10, greenOffset=20, blueOffset=30, alphaOffset=40)
+root on stage: (redMultiplier=0.796875, greenMultiplier=0.5, blueMultiplier=1, alphaMultiplier=0.8984375, redOffset=5, greenOffset=10, blueOffset=15, alphaOffset=20)
+onParent: (redMultiplier=0.3984375, greenMultiplier=0.25, blueMultiplier=0.5, alphaMultiplier=0.44921875, redOffset=17, greenOffset=20, blueOffset=63, alphaOffset=68)
+onChild: (redMultiplier=0.19921875, greenMultiplier=0.25, blueMultiplier=0.125, alphaMultiplier=0.44921875, redOffset=20, greenOffset=25, blueOffset=78, alphaOffset=85)
+stage default: (redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=0, greenOffset=0, blueOffset=0, alphaOffset=0)
+stage modified: (redMultiplier=0.5, greenMultiplier=0.5, blueMultiplier=0.5, alphaMultiplier=1, redOffset=10, greenOffset=20, blueOffset=30, alphaOffset=0)
+onChild after stage modified: (redMultiplier=0.19921875, greenMultiplier=0.25, blueMultiplier=0.125, alphaMultiplier=0.44921875, redOffset=20, greenOffset=25, blueOffset=78, alphaOffset=85)
+same instance: false
+after mutating returned copy: (redMultiplier=0.19921875, greenMultiplier=0.25, blueMultiplier=0.125, alphaMultiplier=0.44921875, redOffset=20, greenOffset=25, blueOffset=78, alphaOffset=85)
+onParent.z = 10:
+  onParent: (redMultiplier=0.3984375, greenMultiplier=0.25, blueMultiplier=0.5, alphaMultiplier=0.44921875, redOffset=17, greenOffset=20, blueOffset=63, alphaOffset=68)
+  onChild: (redMultiplier=0.5, greenMultiplier=1, blueMultiplier=0.25, alphaMultiplier=1, redOffset=10, greenOffset=20, blueOffset=30, alphaOffset=40)
+  grandChild: (redMultiplier=0.25, greenMultiplier=0.5, blueMultiplier=0.125, alphaMultiplier=0.5, redOffset=12, greenOffset=26, blueOffset=32, alphaOffset=50)
+onParent.z = 0:
+  onParent: (redMultiplier=0.3984375, greenMultiplier=0.25, blueMultiplier=0.5, alphaMultiplier=0.44921875, redOffset=17, greenOffset=20, blueOffset=63, alphaOffset=68)
+  onChild: (redMultiplier=0.5, greenMultiplier=1, blueMultiplier=0.25, alphaMultiplier=1, redOffset=10, greenOffset=20, blueOffset=30, alphaOffset=40)
+  grandChild: (redMultiplier=0.25, greenMultiplier=0.5, blueMultiplier=0.125, alphaMultiplier=0.5, redOffset=12, greenOffset=26, blueOffset=32, alphaOffset=50)
+onParent.z = 0, onChild.z = 25:
+  onChild: (redMultiplier=0.5, greenMultiplier=1, blueMultiplier=0.25, alphaMultiplier=1, redOffset=10, greenOffset=20, blueOffset=30, alphaOffset=40)
+  grandChild: (redMultiplier=0.5, greenMultiplier=0.5, blueMultiplier=0.5, alphaMultiplier=0.5, redOffset=4, greenOffset=6, blueOffset=8, alphaOffset=10)
+onParent.z = 0, onChild.z = 25, grandChild.z = 0:
+  grandChild: (redMultiplier=0.5, greenMultiplier=0.5, blueMultiplier=0.5, alphaMultiplier=0.5, redOffset=4, greenOffset=6, blueOffset=8, alphaOffset=10)
+onChild.transform.matrix3D = new Matrix3D():
+  grandChild: (redMultiplier=0.5, greenMultiplier=0.5, blueMultiplier=0.5, alphaMultiplier=0.5, redOffset=4, greenOffset=6, blueOffset=8, alphaOffset=10)
+off-stage offParent.z = 10, offChild.z = 0:
+  offParent: (redMultiplier=0.5, greenMultiplier=0.5, blueMultiplier=0.5, alphaMultiplier=0.5, redOffset=100, greenOffset=100, blueOffset=100, alphaOffset=100)
+  offChild: (redMultiplier=0.5, greenMultiplier=0.25, blueMultiplier=0.75, alphaMultiplier=0.796875, redOffset=10, greenOffset=20, blueOffset=30, alphaOffset=40)
+  offGrandChild: (redMultiplier=0.5, greenMultiplier=0.5, blueMultiplier=0.5, alphaMultiplier=0.5, redOffset=4, greenOffset=6, blueOffset=8, alphaOffset=10)
+off-stage offGrandChild.z = 0:
+  offGrandChild: (redMultiplier=0.5, greenMultiplier=0.5, blueMultiplier=0.5, alphaMultiplier=0.5, redOffset=4, greenOffset=6, blueOffset=8, alphaOffset=10)
