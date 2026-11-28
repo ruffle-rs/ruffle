@@ -51,7 +51,7 @@ pub fn get_local<'gc>(
     }
 
     let Some(full_name) = local_shared_object_key(
-        activation.context.root_swf.url(),
+        activation.caller_movie_or_root(),
         &name.to_utf8_lossy(),
         local_path.as_deref(),
         secure,

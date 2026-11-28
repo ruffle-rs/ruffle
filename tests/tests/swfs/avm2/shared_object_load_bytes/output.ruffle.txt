@@ -1,0 +1,27 @@
+root: new
+root: flushed
+sub/loader.swf: new
+sub/loader.swf: flushed
+child loaded by root: url test.swf/[[DYNAMIC]]/1, loaderURL test.swf
+child loaded by root: same as root
+child loaded by root: flushed
+child loaded by sub/loader.swf: url sub/loader.swf/[[DYNAMIC]]/1, loaderURL sub/loader.swf
+child loaded by sub/loader.swf: same as sub/loader.swf
+child loaded by sub/loader.swf: flushed
+child loaded by child loaded by root: url test.swf/[[DYNAMIC]]/1/[[DYNAMIC]]/1, loaderURL test.swf/[[DYNAMIC]]/1
+child loaded by child loaded by root: same as root
+child loaded by child loaded by root: flushed
+child loaded by child loaded by sub/loader.swf: url sub/loader.swf/[[DYNAMIC]]/1/[[DYNAMIC]]/1, loaderURL sub/loader.swf/[[DYNAMIC]]/1
+child loaded by child loaded by sub/loader.swf: same as sub/loader.swf
+child loaded by child loaded by sub/loader.swf: flushed
+// AVM1 child loaded by root
+avm1 child: 1, true
+// AVM1 child loaded by sub/loader.swf
+avm1 child: 1, true
+// AVM1 child loaded by child loaded by root
+avm1 child: 2, true
+// AVM1 child loaded by child loaded by sub/loader.swf
+avm1 child: 2, true
+// Objects written by the AVM1 children
+root: 2
+sub/loader.swf: 2

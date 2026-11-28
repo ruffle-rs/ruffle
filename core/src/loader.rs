@@ -537,7 +537,7 @@ pub enum LoaderStatus {
     Failed,
 }
 
-#[derive(Collect, Clone, Copy)]
+#[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub enum MovieLoaderVMData<'gc> {
     Avm1 {
@@ -565,11 +565,11 @@ pub enum MovieLoaderVMData<'gc> {
 }
 
 impl<'gc> MovieLoaderVMData<'gc> {
-    fn load_bytes_info(&self) -> Option<LoadBytesInfo> {
+    fn load_bytes_info(&self) -> Option<&LoadBytesInfo> {
         match self {
             MovieLoaderVMData::Avm2 {
                 load_bytes_info, ..
-            } => *load_bytes_info,
+            } => load_bytes_info.as_ref(),
             _ => None,
         }
     }
@@ -1623,7 +1623,7 @@ impl<'gc> MovieLoader<'gc> {
                 target_clip,
                 vm_data,
                 ..
-            }) => (*target_clip, *vm_data),
+            }) => (*target_clip, vm_data.clone()),
             None => return Err(Error::Cancelled),
         };
 
@@ -1676,7 +1676,7 @@ impl<'gc> MovieLoader<'gc> {
                 target_clip,
                 vm_data,
                 ..
-            }) => (*target_clip, *vm_data),
+            }) => (*target_clip, vm_data.clone()),
             None => return Err(Error::Cancelled),
         };
 
@@ -1717,7 +1717,7 @@ impl<'gc> MovieLoader<'gc> {
                     data,
                     url.clone(),
                     loader_url.clone(),
-                    load_bytes_info,
+                    load_bytes_info.cloned(),
                 )?;
 
                 if matches!(vm_data, MovieLoaderVMData::Avm1 { .. }) {
@@ -1732,7 +1732,13 @@ impl<'gc> MovieLoader<'gc> {
                 let (width, height) =
                     ruffle_render::utils::decode_define_bits_jpeg_dimensions(data)
                         .unwrap_or((0, 0));
-                SwfMovieData::from_loaded_image(url.clone(), from_bytes, length, width, height)
+                SwfMovieData::from_loaded_image(
+                    url.clone(),
+                    load_bytes_info.cloned(),
+                    length,
+                    width,
+                    height,
+                )
             }
             ContentType::Unknown => SwfMovieData::error_movie(url.clone()),
         };
@@ -2031,7 +2037,7 @@ impl<'gc> MovieLoader<'gc> {
                 target_clip,
                 vm_data,
                 ..
-            }) => (*target_clip, *vm_data),
+            }) => (*target_clip, vm_data.clone()),
             None => return Err(Error::Cancelled),
         };
 
@@ -2086,7 +2092,7 @@ impl<'gc> MovieLoader<'gc> {
                 movie,
                 vm_data,
                 ..
-            }) => (*target_clip, *vm_data, *movie),
+            }) => (*target_clip, vm_data.clone(), *movie),
             None => return Err(Error::Cancelled),
         };
 
@@ -2261,7 +2267,7 @@ impl<'gc> MovieLoader<'gc> {
                 target_clip,
                 vm_data,
                 ..
-            }) => (*target_clip, *vm_data),
+            }) => (*target_clip, vm_data.clone()),
             None => return Err(Error::Cancelled),
         };
 

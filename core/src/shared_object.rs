@@ -1,14 +1,20 @@
 //! Shared object logic common to AVM1 and AVM2.
 
+use ruffle_common::tag_utils::SwfMovie;
+
 /// Returns the storage key of the local shared object accessed by
-/// `SharedObject.getLocal(name, local_path, secure)` from a movie at `movie_url`,
+/// `SharedObject.getLocal(name, local_path, secure)` from `movie`,
 /// or `None` when the shared object can't be created.
-pub fn local_shared_object_key(
-    movie_url: &str,
+pub fn local_shared_object_key<'gc>(
+    movie: SwfMovie<'gc>,
     name: &str,
     local_path: Option<&str>,
     secure: bool,
 ) -> Option<String> {
+    // A movie loaded with `Loader.loadBytes` uses the URL of the movie that
+    // loaded it, as in Flash Player.
+    let movie_url = movie.inherited_url();
+
     // TODO: It appears that Flash does some kind of escaping here:
     // the name "foo\uD800" correspond to a file named "fooE#FB#FB#D.sol".
 

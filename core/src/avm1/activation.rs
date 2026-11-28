@@ -14,7 +14,7 @@ use crate::display_object::{
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
 use crate::loader::MovieLoaderVMData;
 use crate::string::{AvmString, HasStringContext, StringContext, SwfStrExt as _, WStr, WString};
-use crate::tag_utils::SwfSlice;
+use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::Instantiator;
 use crate::{avm_error, avm_warn};
 use gc_arena::{Gc, Mutation};
@@ -197,7 +197,6 @@ pub struct Activation<'a, 'gc: 'a> {
     local_registers: &'a [Cell<Value<'gc>>],
 
     /// The base clip of this stack frame.
-    /// This will be the MovieClip that contains the bytecode.
     base_clip: DisplayObject<'gc>,
 
     /// The current target display object of this stack frame.
@@ -963,6 +962,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             action,
             self.scope(),
             constant_pool,
+            self.code_movie(),
             // `base_clip` should always be a living `MovieClip` so this can't fail during "normal" execution
             // However, the playerglobal doesn't have any movie clips, so we want to fall back to "something" for that
             MovieClipReference::try_from_stage_object(self, bc).unwrap_or_else(|| {
@@ -3070,9 +3070,22 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     /// Gets the base clip of this stack frame.
-    /// This is the movie clip that contains the executing bytecode.
     pub fn base_clip(&self) -> DisplayObject<'gc> {
         self.base_clip
+    }
+
+    /// Returns the movie that contains the bytecode of this stack frame.
+    ///
+    /// For a function, this is the movie it was defined in, which can differ
+    /// from the movie of the base clip: the base clip can be another clip
+    /// (SWF 5 and earlier), or have loaded another movie since.
+    /// Otherwise (frame scripts, clip events, or no bytecode at all), this is
+    /// the movie of the base clip.
+    pub fn code_movie(&self) -> SwfMovie<'gc> {
+        self.callee
+            .and_then(|callee| callee.as_function())
+            .and_then(|function| function.defining_movie())
+            .unwrap_or_else(|| self.base_clip.movie())
     }
 
     /// Gets the current target clip of this stack frame.

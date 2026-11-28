@@ -1,0 +1,88 @@
+// Before the levels load another movie
+root, null: new, flush is undefined
+root, /: new, flush is undefined
+root, /nonexistent: null
+root, /nonexistent/a.swf: null
+child, null: same as root, null
+child, /: same as root, /
+child, /nonexistent: null
+child, /nonexistent/a.swf: null
+// After the levels loaded another movie, or failed to
+// _level1: foo:/nonexistent/a.swf, movieclip, 
+_level1, child, called by root, null: same as root, null
+_level1, child, called by root, /: same as root, /
+_level1, child, called by root, /nonexistent: null
+_level1, child, called by root, /nonexistent/a.swf: null
+_level1, child, method of the level, null: same as root, null
+_level1, child, method of the level, /: same as root, /
+_level1, child, method of the level, /nonexistent: null
+_level1, child, method of the level, /nonexistent/a.swf: null
+_level1, root, method of the level, null: same as root, null
+_level1, root, method of the level, /: same as root, /
+_level1, root, method of the level, /nonexistent: null
+_level1, root, method of the level, /nonexistent/a.swf: null
+// _level2: foo:nonexistent/a.swf, movieclip, 
+_level2, child, called by root, null: same as root, null
+_level2, child, called by root, /: same as root, /
+_level2, child, called by root, /nonexistent: null
+_level2, child, called by root, /nonexistent/a.swf: null
+_level2, child, method of the level, null: same as root, null
+_level2, child, method of the level, /: same as root, /
+_level2, child, method of the level, /nonexistent: null
+_level2, child, method of the level, /nonexistent/a.swf: null
+_level2, root, method of the level, null: same as root, null
+_level2, root, method of the level, /: same as root, /
+_level2, root, method of the level, /nonexistent: null
+_level2, root, method of the level, /nonexistent/a.swf: null
+// _level3: foo:///nonexistent/a.swf, movieclip, 
+_level3, child, called by root, null: same as root, null
+_level3, child, called by root, /: same as root, /
+_level3, child, called by root, /nonexistent: null
+_level3, child, called by root, /nonexistent/a.swf: null
+_level3, child, method of the level, null: same as root, null
+_level3, child, method of the level, /: same as root, /
+_level3, child, method of the level, /nonexistent: null
+_level3, child, method of the level, /nonexistent/a.swf: null
+_level3, root, method of the level, null: same as root, null
+_level3, root, method of the level, /: same as root, /
+_level3, root, method of the level, /nonexistent: null
+_level3, root, method of the level, /nonexistent/a.swf: null
+// _level4: foo://host/nonexistent/a.swf, movieclip, 
+_level4, child, called by root, null: same as root, null
+_level4, child, called by root, /: same as root, /
+_level4, child, called by root, /nonexistent: null
+_level4, child, called by root, /nonexistent/a.swf: null
+_level4, child, method of the level, null: same as root, null
+_level4, child, method of the level, /: same as root, /
+_level4, child, method of the level, /nonexistent: null
+_level4, child, method of the level, /nonexistent/a.swf: null
+_level4, root, method of the level, null: same as root, null
+_level4, root, method of the level, /: same as root, /
+_level4, root, method of the level, /nonexistent: null
+_level4, root, method of the level, /nonexistent/a.swf: null
+// _level5: nonexistent/a.swf, movieclip, 
+_level5, child, called by root, null: same as root, null
+_level5, child, called by root, /: same as root, /
+_level5, child, called by root, /nonexistent: null
+_level5, child, called by root, /nonexistent/a.swf: null
+_level5, child, method of the level, null: same as root, null
+_level5, child, method of the level, /: same as root, /
+_level5, child, method of the level, /nonexistent: null
+_level5, child, method of the level, /nonexistent/a.swf: null
+_level5, root, method of the level, null: same as root, null
+_level5, root, method of the level, /: same as root, /
+_level5, root, method of the level, /nonexistent: null
+_level5, root, method of the level, /nonexistent/a.swf: null
+// _level6: other/child.swf, movieclip, file:.../other/child.swf
+_level6, child, called by root, null: same as root, null
+_level6, child, called by root, /: same as root, /
+_level6, child, called by root, /nonexistent: null
+_level6, child, called by root, /nonexistent/a.swf: null
+_level6, child, method of the level, null: same as root, null
+_level6, child, method of the level, /: same as root, /
+_level6, child, method of the level, /nonexistent: null
+_level6, child, method of the level, /nonexistent/a.swf: null
+_level6, root, method of the level, null: same as root, null
+_level6, root, method of the level, /: same as root, /
+_level6, root, method of the level, /nonexistent: null
+_level6, root, method of the level, /nonexistent/a.swf: null

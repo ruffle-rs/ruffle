@@ -4,7 +4,6 @@ use crate::avm1::amf::{
 use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, Attribute, Error, NativeObject, Object, Value};
 use crate::avm1_stub;
-use crate::display_object::TDisplayObject;
 use crate::shared_object::local_shared_object_key;
 use crate::string::AvmString;
 use flash_lso::amf0::writer::{Amf0Writer, CacheKey, ObjWriter};
@@ -139,13 +138,10 @@ fn get_local<'gc>(
     // Only the boolean `true` is secure, other values aren't converted.
     let secure = matches!(args.get(2), Some(Value::Bool(true)));
 
-    let movie = activation.base_clip().movie();
-    let Some(full_name) = local_shared_object_key(
-        movie.url(),
-        &name.to_utf8_lossy(),
-        local_path.as_deref(),
-        secure,
-    ) else {
+    let movie = activation.code_movie();
+    let Some(full_name) =
+        local_shared_object_key(movie, &name.to_utf8_lossy(), local_path.as_deref(), secure)
+    else {
         return Ok(Value::Null);
     };
 
