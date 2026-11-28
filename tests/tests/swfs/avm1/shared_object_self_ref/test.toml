@@ -1,0 +1,14 @@
+num_ticks = 1
+
+[subtests.initialize]
+output_path = "output1.txt"
+
+[subtests.initialize.shared_objects."localhost//RuffleTestRef"]
+expected = "RuffleTestRef"
+
+[subtests.reload]
+output_path = "output2.txt"
+
+[subtests.reload.shared_objects."localhost//RuffleTestRef"]
+load = "RuffleTestRef"
+expected = "RuffleTestRef"

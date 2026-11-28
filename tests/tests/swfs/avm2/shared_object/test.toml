@@ -1,0 +1,22 @@
+num_ticks = 1
+
+[subtests.initialize]
+output_path = "output1.txt"
+
+[subtests.initialize.shared_objects."localhost//RuffleTest"]
+expected = "RuffleTest"
+
+# Flash Player's output is non-deterministic because property serialization
+# ordering can vary. Compare against the tracked Ruffle output instead.
+[subtests.initialize.shared_objects."localhost//RuffleTestNonDeterministic"]
+expected = "RuffleTestNonDeterministic"
+nondeterministic = true
+
+[subtests.reload]
+output_path = "output2.txt"
+
+[subtests.reload.shared_objects."localhost//RuffleTest"]
+load = "RuffleTest"
+
+[subtests.reload.shared_objects."localhost//RuffleTestNonDeterministic"]
+load = "RuffleTestNonDeterministic.ruffle"

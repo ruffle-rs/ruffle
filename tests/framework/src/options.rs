@@ -88,9 +88,12 @@ pub struct AudioAssertion {
 #[derive(Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SharedObjectConfig {
-    pub expected: String,
+    pub load: Option<String>,
+    pub expected: Option<String>,
     #[serde(default)]
-    pub known_failure: bool,
+    pub nondeterministic: bool,
+    #[serde(default)]
+    pub known_failure: Option<bool>,
 }
 
 #[derive(Clone, Deserialize)]
@@ -275,13 +278,37 @@ impl TestOptions {
             approx.validate()?;
         }
 
+        for (name, shared_object) in &self.shared_objects {
+            if shared_object.load.is_none() && shared_object.expected.is_none() {
+                bail!("SharedObject '{name}' must specify either 'load' or 'expected'.");
+            }
+            if shared_object.nondeterministic && shared_object.expected.is_none() {
+                bail!(
+                    "SharedObject '{name}' cannot use 'nondeterministic = true' without an 'expected' output."
+                );
+            }
+            if shared_object.nondeterministic && shared_object.known_failure.is_some() {
+                bail!(
+                    "SharedObject '{name}' cannot specify 'known_failure' when 'nondeterministic = true'."
+                );
+            }
+            if shared_object.known_failure == Some(true) && shared_object.expected.is_none() {
+                bail!(
+                    "SharedObject '{name}' cannot set 'known_failure = true' without an 'expected' output."
+                );
+            }
+        }
+
         Ok(())
     }
 
     pub fn has_known_failure(&self) -> bool {
         !matches!(self.known_failure, KnownFailure::None)
             || self.image_comparisons.values().any(|cmp| cmp.known_failure)
-            || self.shared_objects.values().any(|so| so.known_failure)
+            || self
+                .shared_objects
+                .values()
+                .any(|so| so.known_failure == Some(true))
     }
 
     pub fn output_path(&self, test_directory: &VfsPath) -> Result<VfsPath> {
@@ -345,5 +372,107 @@ impl<'de> Deserialize<'de> for Quality {
         let quality = std::str::FromStr::from_str(&s)
             .map_err(|_| serde::de::Error::custom(format!("Unknown quality: {s}")))?;
         Ok(Quality(quality))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::TestOptions;
+
+    #[test]
+    fn shared_objects_can_load_and_expect_outputs_independently() {
+        let options = TestOptions::deserialize_toml(
+            r#"
+num_ticks = 1
+
+[shared_objects."localhost//RuffleTest"]
+load = "initial"
+expected = "expected"
+
+[shared_objects."localhost//LoadOnly"]
+load = "load_only"
+
+[shared_objects."localhost//ExpectedOnly"]
+expected = "expected_only"
+"#,
+        )
+        .unwrap();
+
+        assert_eq!(options.len(), 1);
+        assert!(options[0].validate().is_ok());
+
+        let both = options[0]
+            .shared_objects
+            .get("localhost//RuffleTest")
+            .unwrap();
+        assert_eq!(both.load.as_deref(), Some("initial"));
+        assert_eq!(both.expected.as_deref(), Some("expected"));
+
+        let load_only = options[0]
+            .shared_objects
+            .get("localhost//LoadOnly")
+            .unwrap();
+        assert_eq!(load_only.load.as_deref(), Some("load_only"));
+        assert_eq!(load_only.expected.as_deref(), None);
+
+        let expected_only = options[0]
+            .shared_objects
+            .get("localhost//ExpectedOnly")
+            .unwrap();
+        assert_eq!(expected_only.load.as_deref(), None);
+        assert_eq!(expected_only.expected.as_deref(), Some("expected_only"));
+    }
+
+    #[test]
+    fn nondeterministic_shared_objects_use_only_ruffle_output() {
+        let options = TestOptions::deserialize_toml(
+            r#"
+num_ticks = 1
+
+[shared_objects."localhost//NonDeterministic"]
+expected = "expected"
+nondeterministic = true
+"#,
+        )
+        .unwrap();
+
+        assert!(options[0].validate().is_ok());
+        let config = options[0]
+            .shared_objects
+            .get("localhost//NonDeterministic")
+            .unwrap();
+        assert!(config.nondeterministic);
+        assert_eq!(config.known_failure, None);
+
+        for known_failure in ["true", "false"] {
+            let contents = format!(
+                r#"
+num_ticks = 1
+
+[shared_objects."localhost//NonDeterministic"]
+expected = "expected"
+nondeterministic = true
+known_failure = {known_failure}
+"#
+            );
+            let options = TestOptions::deserialize_toml(&contents).unwrap();
+            assert!(options[0].validate().is_err());
+        }
+
+        let options = TestOptions::deserialize_toml(
+            r#"
+num_ticks = 1
+
+[shared_objects."localhost//NonDeterministic"]
+load = "initial"
+nondeterministic = true
+"#,
+        )
+        .unwrap();
+        let error = options[0].validate().unwrap_err();
+        assert_eq!(
+            error.to_string(),
+            "SharedObject 'localhost//NonDeterministic' cannot use 'nondeterministic = true' without an 'expected' output."
+        );
     }
 }

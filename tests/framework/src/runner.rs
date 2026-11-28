@@ -16,6 +16,7 @@ use crate::runner::automation::perform_automated_event;
 use crate::runner::image_test::capture_and_compare_image;
 use crate::runner::trace::compare_trace_output;
 use crate::test::Test;
+use crate::util::read_bytes;
 use anyhow::{Result, anyhow};
 use ruffle_core::FloatDuration;
 use ruffle_core::backend::locale::DeterministicLocaleBackend;
@@ -84,6 +85,22 @@ impl TestRunner {
 
         let log = TestLogBackend::new(test.options.log_warnings);
         let (fs_command_provider, fs_commands) = TestFsCommandProvider::new();
+        let initial_storage = test
+            .options
+            .shared_objects
+            .iter()
+            .filter_map(|(name, config)| config.load.as_ref().map(|fixture| (name, fixture)))
+            .map(|(name, fixture)| {
+                let path = test.root_path.join(format!("{fixture}.sol"))?;
+                let bytes = read_bytes(&path).map_err(|error| {
+                    anyhow!(
+                        "Failed to read initial SharedObject fixture '{}': {error}",
+                        path.as_str()
+                    )
+                })?;
+                Ok((name.clone(), bytes))
+            })
+            .collect::<Result<HashMap<_, _>>>()?;
         let navigator = TestNavigatorBackend::new(
             test.root_path.clone(),
             &executor,
@@ -95,7 +112,9 @@ impl TestRunner {
             .with_log(log.clone())
             .with_navigator(navigator)
             .with_locale(DeterministicLocaleBackend::default())
-            .with_storage(Box::new(TestStorageBackend::new()))
+            .with_storage(Box::new(TestStorageBackend::with_initial_data(
+                initial_storage,
+            )))
             .with_max_execution_duration(Duration::from_secs(300))
             .with_fs_commands(Box::new(fs_command_provider))
             .with_ui(TestUiBackend::new(

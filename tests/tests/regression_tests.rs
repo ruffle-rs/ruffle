@@ -4,7 +4,6 @@
 
 use crate::environment::NativeEnvironment;
 use crate::external_interface::tests::{external_interface_avm1, external_interface_avm2};
-use crate::shared_object::{shared_object_avm1, shared_object_avm2, shared_object_self_ref_avm1};
 use anyhow::Context;
 use clap::Parser;
 use libtest_mimic::{Arguments, Trial};
@@ -21,7 +20,6 @@ use std::thread::sleep;
 
 mod environment;
 mod external_interface;
-mod shared_object;
 
 const TEST_TOML_NAME: &str = "test.toml";
 
@@ -87,21 +85,6 @@ fn main() {
         .sorted_by_name();
 
     // Manual tests here, since #[test] doesn't work once we use our own test harness
-    let env_clone = env.clone();
-    runner.with_additional_test(Trial::test("shared_object_avm1", move || {
-        shared_object_avm1(&*env_clone)
-    }));
-
-    let env_clone = env.clone();
-    runner.with_additional_test(Trial::test("shared_object_self_ref_avm1", move || {
-        shared_object_self_ref_avm1(&*env_clone)
-    }));
-
-    let env_clone = env.clone();
-    runner.with_additional_test(Trial::test("shared_object_avm2", move || {
-        shared_object_avm2(&*env_clone)
-    }));
-
     let env_clone = env.clone();
     runner.with_additional_test(Trial::test("external_interface_avm1", move || {
         external_interface_avm1(&*env_clone)

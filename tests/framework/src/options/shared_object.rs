@@ -34,12 +34,47 @@ fn diff_binary(actual: &[u8], expected: &[u8], label: &str) -> Result<()> {
     anyhow::bail!(message)
 }
 
+fn check_ruffle_output(
+    actual_bytes: &[u8],
+    root_path: &vfs::VfsPath,
+    expected: &str,
+    label: &str,
+) -> Result<()> {
+    let ruffle_path = root_path.join(format!("{expected}.ruffle.sol"))?;
+
+    if !ruffle_path.exists()? {
+        let mut file = ruffle_path.create_file()?;
+        file.write_all(actual_bytes)?;
+
+        anyhow::bail!(
+            "Created '{}.ruffle.sol'. Please verify it and rerun the test.",
+            expected
+        );
+    }
+
+    let mut ruffle_bytes = Vec::new();
+    ruffle_path.open_file()?.read_to_end(&mut ruffle_bytes)?;
+
+    if let Err(mismatch) = diff_binary(actual_bytes, &ruffle_bytes, label) {
+        anyhow::bail!(
+            "{mismatch}\nThe tracked Ruffle output has changed. Please inspect and update '{}.ruffle.sol' if this change is expected.",
+            expected
+        );
+    }
+
+    Ok(())
+}
+
 pub fn check_shared_objects(
     player: &std::sync::Mutex<ruffle_core::Player>,
     shared_objects: &HashMap<String, SharedObjectConfig>,
     root_path: &vfs::VfsPath,
 ) -> Result<()> {
     for (name, so_config) in shared_objects {
+        let Some(expected) = so_config.expected.as_deref() else {
+            continue;
+        };
+
         let player_lock = player.lock().unwrap();
 
         let test_storage =
@@ -58,11 +93,30 @@ pub fn check_shared_objects(
             }
         };
 
-        let expected_path = root_path.join(format!("{}.sol", so_config.expected))?;
+        if so_config.nondeterministic {
+            let flash_path = root_path.join(format!("{expected}.sol"))?;
+            if flash_path.exists()? {
+                anyhow::bail!(
+                    "SharedObject '{name}' is marked as non-deterministic, so the Flash fixture '{}.sol' must not exist. Keep only '{}.ruffle.sol'.",
+                    expected,
+                    expected
+                );
+            }
+
+            check_ruffle_output(
+                actual_bytes,
+                root_path,
+                expected,
+                &format!("Non-deterministic SharedObject '{name}'"),
+            )?;
+            continue;
+        }
+
+        let expected_path = root_path.join(format!("{expected}.sol"))?;
         if !expected_path.exists()? {
             anyhow::bail!(
                 "Expected SharedObject file missing: '{}'. Please ensure it exists.",
-                so_config.expected
+                expected
             );
         }
 
@@ -71,38 +125,19 @@ pub fn check_shared_objects(
             .open_file()?
             .read_to_end(&mut expected_bytes)?;
 
-        if so_config.known_failure {
+        if so_config.known_failure == Some(true) {
             if actual_bytes.as_slice() == expected_bytes.as_slice() {
                 anyhow::bail!(
                     "SharedObject test {name} was marked as a known failure, but the output matched the expected Flash output. Remove `known_failure = true`!",
                 );
             }
 
-            let ruffle_path = root_path.join(format!("{}.ruffle.sol", so_config.expected))?;
-
-            if !ruffle_path.exists()? {
-                let mut file = ruffle_path.create_file()?;
-                file.write_all(actual_bytes)?;
-
-                anyhow::bail!(
-                    "Created '{}.ruffle.sol'. Please verify it and rerun the test.",
-                    so_config.expected
-                );
-            }
-
-            let mut ruffle_bytes = Vec::new();
-            ruffle_path.open_file()?.read_to_end(&mut ruffle_bytes)?;
-
-            if let Err(mismatch) = diff_binary(
+            check_ruffle_output(
                 actual_bytes,
-                &ruffle_bytes,
+                root_path,
+                expected,
                 &format!("Known failure SharedObject '{name}'"),
-            ) {
-                anyhow::bail!(
-                    "{mismatch}\nThe tracked Ruffle output has changed. Please inspect and update '{}.ruffle.sol' if this change is expected.",
-                    so_config.expected
-                );
-            }
+            )?;
         } else {
             diff_binary(
                 actual_bytes,
