@@ -1,0 +1,333 @@
+// AVM1 timeline rewind (gotoAndStop(1) from frame 3): which objects
+// survive at each depth. Case k is at depth 100 + 10k (d below).
+// A, B = sprites 1, 2 (A exported as expA); E1, E2 = edit texts;
+// S1, S2 = shapes (boxes at y 0, 40); TA, TB = static texts ("a", "b").
+// rN = PlaceObject ratio N. Objects are identified by _name and the
+// m marker. Shapes and static texts (46-53) are in their own
+// 2-frame clips kN, which play to frame 2, stop and are sent back
+// to frame 1; they are identified by kN's bounds and TextSnapshot.
+// Cases:
+//  1: d110 f1 A; f2 remove+B
+//  2: d120 f1 A (marked), persists
+//  3: d130 f1 A; f2 remove+B, script B._x=5
+//  4: d140 f1 A; f2 remove+B, script B._alpha=50
+//  5: d150 f1 A; f2 remove+B, script B.v=1
+//  6: d160 f1 A at d, B at d+5; f2 script B.swapDepths(d)
+//  7: d170 f1 A (marked) at d; f2 script A.swapDepths(d+5)
+//  8: d180 f1 none; f2 B
+//  9: d190 f1 A (marked); f2 PlaceObject move (matrix)
+//  10: d200 f1 A (marked); f2 PlaceObject move+char B
+//  11: d210 f1 A (marked); f2 remove + A again
+//  12: d220 f1 A (marked); f2 remove
+//  13: d230 f1 A; f2 script removeMovieClip(A), duplicateMovieClip(B) to d
+//  14: d240 f1 A; f2 remove; f3 B
+//  15: d250 f1 A; f2 remove+B; f3 PlaceObject move B (matrix)
+//  16: d260 f1 B (marked); f2 move+char A (char swap via timeline Replace)
+//  17: d270 f1 A r1; f2 remove+B r2
+//  18: d280 f1 A r1 (marked); f2 remove+A r2
+//  19: d290 f1 A r1; f2 remove+B r1
+//  20: d300 f1 A r1 (marked), persists
+//  21: d310 f1 A r1; f2 remove+B r2, script B._x=5
+//  22: d320 f1 A r1; f2 remove+B r2, script B.v=1
+//  23: d330 f1 A r1; f2 remove+B r2, script B._alpha=50
+//  24: d340 f1 A r1 at d; f2 B r2 at d+5, script B.swapDepths(d)
+//  25: d350 f1 A r1 (marked); f2 PlaceObject move ratio 5
+//  26: d360 f1 A r1; f2 remove+B r2, script B.swapDepths(d+5) then back to d
+//  27: d370 f1 A r1; f2 remove+B r2; script B.removeMovieClip (high only)
+//  28: d380 f1 A r1 (marked); f2 script dup A to d+5 (nothing placed at d+5)
+//  29: d390 f1 A r1 (marked); f2 script A.swapDepths(d+5)
+//  30: d400 f1 A r1 (marked); f2 B r2 at d+5, script A.swapDepths(d+5) (A<->B)
+//  31: d410 f1 A (no ratio); f2 remove+B r2
+//  32: d420 f1 A r0; f2 remove+B r2
+//  33: d430 f1 A r1; f2 remove+B (no ratio)
+//  34: d440 f1 A (no ratio); f2 remove+B r0
+//  35: d450 f1 A; f2 remove, script attachMovie(A) to d
+//  36: d460 f1 none; f2 script attachMovie(A) to d
+//  37: d470 f1 A; f2 remove, script createEmptyMovieClip to d
+//  38: d480 f1 none; f2 script createEmptyMovieClip to d
+//  39: d490 f1 A; f2 remove, script createTextField to d
+//  40: d500 f1 none; f2 script createTextField to d
+//  41: d510 f1 E1 (marked); f2 remove+E1 (same placement)
+//  42: d520 f1 E1 (marked); f2 remove+E1 (other matrix)
+//  43: d530 f1 E1 (marked); f2 remove+E2 (same name and matrix)
+//  44: d540 f1 E1 (marked); f2 PlaceObject move (matrix)
+//  45: d550 f1 none; f2 E1
+//  46: d560 f1 S1; f2 remove+S1 (same placement)
+//  47: d570 f1 S1; f2 remove+S1 (other matrix)
+//  48: d580 f1 S1; f2 remove+S2 (same matrix)
+//  49: d590 f1 none; f2 S1
+//  50: d600 f1 TA; f2 remove+TA (same placement)
+//  51: d610 f1 TA; f2 remove+TA (other matrix)
+//  52: d620 f1 TA; f2 remove+TB (same matrix)
+//  53: d630 f1 none; f2 TA
+// Cases in the 4-frame clips r3 and r4, which go from frame 1 to
+// frame 3 (r3) or 4 (r4) and then back to frame 2:
+//  54: d640 f1 A; f2 remove; f3 A
+//  55: d650 f1 A; f2 remove+B; f3 remove+A
+//  56: d660 f1 A r1; f2 remove+B r2; f3 remove+A r3
+Swf(
+    version: 8,
+    tags: [
+        SetBackgroundColor(0xFFFFFF),
+        DefineSprite(id: 1, tags: [ShowFrame]),
+        DefineSprite(id: 2, tags: [ShowFrame]),
+        ExportAssets([(character: 1, name: "expA")]),
+        Raw(code: 37, data: InlineBytes([ // DefineEditText E1
+            "05 00", // id
+            "60 00 3e 80 00 0c 80", // bounds: (0, 0) to (100, 20) px
+            "80 00", // flags: HasText
+            "00", // no variable
+            "65 31 00", // text "e1"
+        ])),
+        Raw(code: 37, data: InlineBytes([ // DefineEditText E2
+            "06 00", // id
+            "60 00 3e 80 00 0c 80", // bounds: (0, 0) to (100, 20) px
+            "80 00", // flags: HasText
+            "00", // no variable
+            "65 32 00", // text "e2"
+        ])),
+        Raw(code: 2, data: InlineBytes([ // DefineShape S1
+            "07 00", // id
+            "48 01 90 00 64 00", // bounds: (0, 0) to (10, 10) px
+            "01 00 00 00 00", // fill styles: solid black
+            "00", // line styles: none
+            "10 14 27 71 91 ba c8 dc 9c 6e ce 00", // 1 fill bit, 0 line bits; box filled with fill style 1
+        ])),
+        Raw(code: 2, data: InlineBytes([ // DefineShape S2
+            "08 00", // id
+            "58 00 19 0c 81 f4 00", // bounds: (0, 40) to (10, 50) px
+            "01 00 00 00 00", // fill styles: solid black
+            "00", // line styles: none
+            "10 15 60 01 90 77 19 1b ac 8d c9 c6 ec e0 00", // 1 fill bit, 0 line bits; box filled with fill style 1
+        ])),
+        Raw(code: 10, data: InlineBytes([ // DefineFont
+            "09 00", // id
+            "04 00 14 00", // glyph offsets
+            "10 0d 60 02 00 7a 10 03 a5 00 39 20 07 2c 00 00", // glyph 0: em box above the baseline
+            "10 0d 60 02 00 7a 10 03 a5 00 39 20 07 2c 00 00", // glyph 1: same
+        ])),
+        Raw(code: 13, data: InlineBytes([ // DefineFontInfo
+            "09 00", // font id
+            "01 58", // name "X"
+            "00", // flags
+            "61 62", // codes: "a", "b"
+        ])),
+        Raw(code: 11, data: InlineBytes([ // DefineText TA
+            "0a 00", // id
+            "48 01 e1 10 00 00", // bounds: (0, -12) to (12, 0) px
+            "00", // identity matrix
+            "01 08", // glyph bits, advance bits
+            "8c 09 00 00 00 00 f0 00", // font, black, 12 px
+            "01 3c 00", // 1 glyph: 0, advance 6 px
+            "00", // end
+        ])),
+        Raw(code: 11, data: InlineBytes([ // DefineText TB
+            "0b 00", // id
+            "50 00 f0 62 00 00", // bounds: (0, -12) to (24, 0) px
+            "00", // identity matrix
+            "01 08", // glyph bits, advance bits
+            "8c 09 00 00 00 00 f0 00", // font, black, 12 px
+            "01 bc 00", // 1 glyph: 1, advance 6 px
+            "00", // end
+        ])),
+        DefineSprite(id: 146, tags: [
+            PlaceObject2(depth: 16944, character: 7, matrix: (translate_x: 0.0, translate_y: 0.0)),
+            ShowFrame,
+            RemoveObject2(depth: 16944),
+            PlaceObject2(depth: 16944, character: 7, matrix: (translate_x: 0.0, translate_y: 0.0)),
+            DoAction(Rascal(r#"stop();"#)),
+            ShowFrame,
+        ]),
+        DefineSprite(id: 147, tags: [
+            PlaceObject2(depth: 16954, character: 7, matrix: (translate_x: 0.0, translate_y: 0.0)),
+            ShowFrame,
+            RemoveObject2(depth: 16954),
+            PlaceObject2(depth: 16954, character: 7, matrix: (translate_x: 0.0, translate_y: 20.0)),
+            DoAction(Rascal(r#"stop();"#)),
+            ShowFrame,
+        ]),
+        DefineSprite(id: 148, tags: [
+            PlaceObject2(depth: 16964, character: 7, matrix: (translate_x: 0.0, translate_y: 0.0)),
+            ShowFrame,
+            RemoveObject2(depth: 16964),
+            PlaceObject2(depth: 16964, character: 8, matrix: (translate_x: 0.0, translate_y: 0.0)),
+            DoAction(Rascal(r#"stop();"#)),
+            ShowFrame,
+        ]),
+        DefineSprite(id: 149, tags: [
+            ShowFrame,
+            PlaceObject2(depth: 16974, character: 7, matrix: (translate_x: 0.0, translate_y: 0.0)),
+            DoAction(Rascal(r#"stop();"#)),
+            ShowFrame,
+        ]),
+        DefineSprite(id: 150, tags: [
+            PlaceObject2(depth: 16984, character: 10, matrix: (translate_x: 0.0, translate_y: 12.0)),
+            ShowFrame,
+            RemoveObject2(depth: 16984),
+            PlaceObject2(depth: 16984, character: 10, matrix: (translate_x: 0.0, translate_y: 12.0)),
+            DoAction(Rascal(r#"stop();"#)),
+            ShowFrame,
+        ]),
+        DefineSprite(id: 151, tags: [
+            PlaceObject2(depth: 16994, character: 10, matrix: (translate_x: 0.0, translate_y: 12.0)),
+            ShowFrame,
+            RemoveObject2(depth: 16994),
+            PlaceObject2(depth: 16994, character: 10, matrix: (translate_x: 0.0, translate_y: 32.0)),
+            DoAction(Rascal(r#"stop();"#)),
+            ShowFrame,
+        ]),
+        DefineSprite(id: 152, tags: [
+            PlaceObject2(depth: 17004, character: 10, matrix: (translate_x: 0.0, translate_y: 12.0)),
+            ShowFrame,
+            RemoveObject2(depth: 17004),
+            PlaceObject2(depth: 17004, character: 11, matrix: (translate_x: 0.0, translate_y: 12.0)),
+            DoAction(Rascal(r#"stop();"#)),
+            ShowFrame,
+        ]),
+        DefineSprite(id: 153, tags: [
+            ShowFrame,
+            PlaceObject2(depth: 17014, character: 10, matrix: (translate_x: 0.0, translate_y: 12.0)),
+            DoAction(Rascal(r#"stop();"#)),
+            ShowFrame,
+        ]),
+        DefineSprite(id: 20, tags: [
+            PlaceObject2(depth: 17024, character: 1, name: "q54a"),
+            PlaceObject2(depth: 17034, character: 1, name: "q55a"),
+            PlaceObject2(depth: 17044, character: 1, ratio: 1, name: "q56a"),
+            DoAction(Rascal(r#"stop();"#)),
+            ShowFrame,
+            RemoveObject2(depth: 17024),
+            RemoveObject2(depth: 17034),
+            PlaceObject2(depth: 17034, character: 2, name: "q55b"),
+            RemoveObject2(depth: 17044),
+            PlaceObject2(depth: 17044, character: 2, ratio: 2, name: "q56b"),
+            ShowFrame,
+            PlaceObject2(depth: 17024, character: 1, name: "q54c"),
+            RemoveObject2(depth: 17034),
+            PlaceObject2(depth: 17034, character: 1, name: "q55c"),
+            RemoveObject2(depth: 17044),
+            PlaceObject2(depth: 17044, character: 1, ratio: 3, name: "q56c"),
+            ShowFrame,
+            ShowFrame,
+        ]),
+        // Frame 1
+        PlaceObject2(depth: 16494, character: 1, name: "c1a"),
+        PlaceObject2(depth: 16504, character: 1, name: "c2a"),
+        PlaceObject2(depth: 16514, character: 1, name: "c3a"),
+        PlaceObject2(depth: 16524, character: 1, name: "c4a"),
+        PlaceObject2(depth: 16534, character: 1, name: "c5a"),
+        PlaceObject2(depth: 16544, character: 1, name: "c6a"),
+        PlaceObject2(depth: 16554, character: 1, name: "c7a"),
+        PlaceObject2(depth: 16574, character: 1, name: "c9a"),
+        PlaceObject2(depth: 16584, character: 1, name: "c10a"),
+        PlaceObject2(depth: 16594, character: 1, name: "c11a"),
+        PlaceObject2(depth: 16604, character: 1, name: "c12a"),
+        PlaceObject2(depth: 16614, character: 1, name: "c13a"),
+        PlaceObject2(depth: 16624, character: 1, name: "c14a"),
+        PlaceObject2(depth: 16634, character: 1, name: "c15a"),
+        PlaceObject2(depth: 16644, character: 2, name: "c16b"),
+        PlaceObject2(depth: 16654, character: 1, ratio: 1, name: "c17a"),
+        PlaceObject2(depth: 16664, character: 1, ratio: 1, name: "c18a"),
+        PlaceObject2(depth: 16674, character: 1, ratio: 1, name: "c19a"),
+        PlaceObject2(depth: 16684, character: 1, ratio: 1, name: "c20a"),
+        PlaceObject2(depth: 16694, character: 1, ratio: 1, name: "c21a"),
+        PlaceObject2(depth: 16704, character: 1, ratio: 1, name: "c22a"),
+        PlaceObject2(depth: 16714, character: 1, ratio: 1, name: "c23a"),
+        PlaceObject2(depth: 16724, character: 1, ratio: 1, name: "c24a"),
+        PlaceObject2(depth: 16734, character: 1, ratio: 1, name: "c25a"),
+        PlaceObject2(depth: 16744, character: 1, ratio: 1, name: "c26a"),
+        PlaceObject2(depth: 16754, character: 1, ratio: 1, name: "c27a"),
+        PlaceObject2(depth: 16764, character: 1, ratio: 1, name: "c28a"),
+        PlaceObject2(depth: 16774, character: 1, ratio: 1, name: "c29a"),
+        PlaceObject2(depth: 16784, character: 1, ratio: 1, name: "c30a"),
+        PlaceObject2(depth: 16794, character: 1, name: "c31a"),
+        PlaceObject2(depth: 16804, character: 1, ratio: 0, name: "c32a"),
+        PlaceObject2(depth: 16814, character: 1, ratio: 1, name: "c33a"),
+        PlaceObject2(depth: 16824, character: 1, name: "c34a"),
+        PlaceObject2(depth: 16549, character: 2, name: "c6b"),
+        PlaceObject2(depth: 16834, character: 1, name: "c35a"),
+        PlaceObject2(depth: 16854, character: 1, name: "c37a"),
+        PlaceObject2(depth: 16874, character: 1, name: "c39a"),
+        PlaceObject2(depth: 16894, character: 5, matrix: (translate_x: 0.0, translate_y: 200.0), name: "c41e"),
+        PlaceObject2(depth: 16904, character: 5, matrix: (translate_x: 0.0, translate_y: 200.0), name: "c42e"),
+        PlaceObject2(depth: 16914, character: 5, matrix: (translate_x: 0.0, translate_y: 200.0), name: "c43e"),
+        PlaceObject2(depth: 16924, character: 5, matrix: (translate_x: 0.0, translate_y: 200.0), name: "c44e"),
+        PlaceObject2(depth: 16944, character: 146, name: "k46"),
+        PlaceObject2(depth: 16954, character: 147, name: "k47"),
+        PlaceObject2(depth: 16964, character: 148, name: "k48"),
+        PlaceObject2(depth: 16974, character: 149, name: "k49"),
+        PlaceObject2(depth: 16984, character: 150, name: "k50"),
+        PlaceObject2(depth: 16994, character: 151, name: "k51"),
+        PlaceObject2(depth: 17004, character: 152, name: "k52"),
+        PlaceObject2(depth: 17014, character: 153, name: "k53"),
+        PlaceObject2(depth: 17074, character: 20, name: "r3"),
+        PlaceObject2(depth: 17084, character: 20, name: "r4"),
+        DoAction(Rascal(file: "frame1.as")),
+        ShowFrame,
+        // Frame 2
+        RemoveObject2(depth: 16494),
+        PlaceObject2(depth: 16494, character: 2, name: "c1b"),
+        RemoveObject2(depth: 16514),
+        PlaceObject2(depth: 16514, character: 2, name: "c3b"),
+        RemoveObject2(depth: 16524),
+        PlaceObject2(depth: 16524, character: 2, name: "c4b"),
+        RemoveObject2(depth: 16534),
+        PlaceObject2(depth: 16534, character: 2, name: "c5b"),
+        RemoveObject2(depth: 16634),
+        PlaceObject2(depth: 16634, character: 2, name: "c15b"),
+        PlaceObject2(depth: 16564, character: 2, name: "c8b"),
+        PlaceObject2(depth: 16574, move: true, matrix: (translate_x: 7.0, translate_y: 3.0)),
+        PlaceObject2(depth: 16584, move: true, character: 2, matrix: (translate_x: 7.0, translate_y: 3.0)),
+        RemoveObject2(depth: 16594),
+        PlaceObject2(depth: 16594, character: 1, name: "c11x"),
+        RemoveObject2(depth: 16604),
+        RemoveObject2(depth: 16624),
+        PlaceObject2(depth: 16644, move: true, character: 1, matrix: (translate_x: 7.0, translate_y: 3.0)),
+        RemoveObject2(depth: 16654),
+        PlaceObject2(depth: 16654, character: 2, ratio: 2, name: "c17b"),
+        RemoveObject2(depth: 16664),
+        PlaceObject2(depth: 16664, character: 1, ratio: 2, name: "c18x"),
+        RemoveObject2(depth: 16674),
+        PlaceObject2(depth: 16674, character: 2, ratio: 1, name: "c19b"),
+        RemoveObject2(depth: 16694),
+        PlaceObject2(depth: 16694, character: 2, ratio: 2, name: "c21b"),
+        RemoveObject2(depth: 16704),
+        PlaceObject2(depth: 16704, character: 2, ratio: 2, name: "c22b"),
+        RemoveObject2(depth: 16714),
+        PlaceObject2(depth: 16714, character: 2, ratio: 2, name: "c23b"),
+        RemoveObject2(depth: 16744),
+        PlaceObject2(depth: 16744, character: 2, ratio: 2, name: "c26b"),
+        RemoveObject2(depth: 16754),
+        PlaceObject2(depth: 16754, character: 2, ratio: 2, name: "c27b"),
+        RemoveObject2(depth: 16794),
+        PlaceObject2(depth: 16794, character: 2, ratio: 2, name: "c31b"),
+        RemoveObject2(depth: 16804),
+        PlaceObject2(depth: 16804, character: 2, ratio: 2, name: "c32b"),
+        RemoveObject2(depth: 16814),
+        PlaceObject2(depth: 16814, character: 2, name: "c33b"),
+        RemoveObject2(depth: 16824),
+        PlaceObject2(depth: 16824, character: 2, ratio: 0, name: "c34b"),
+        PlaceObject2(depth: 16729, character: 2, ratio: 2, name: "c24b"),
+        PlaceObject2(depth: 16789, character: 2, ratio: 2, name: "c30b"),
+        PlaceObject2(depth: 16734, move: true, ratio: 5),
+        RemoveObject2(depth: 16834),
+        RemoveObject2(depth: 16854),
+        RemoveObject2(depth: 16874),
+        RemoveObject2(depth: 16894),
+        PlaceObject2(depth: 16894, character: 5, matrix: (translate_x: 0.0, translate_y: 200.0), name: "c41e"),
+        RemoveObject2(depth: 16904),
+        PlaceObject2(depth: 16904, character: 5, matrix: (translate_x: 7.0, translate_y: 203.0), name: "c42e"),
+        RemoveObject2(depth: 16914),
+        PlaceObject2(depth: 16914, character: 6, matrix: (translate_x: 0.0, translate_y: 200.0), name: "c43e"),
+        PlaceObject2(depth: 16924, move: true, matrix: (translate_x: 7.0, translate_y: 3.0)),
+        PlaceObject2(depth: 16934, character: 5, matrix: (translate_x: 0.0, translate_y: 200.0), name: "c45e"),
+        DoAction(Rascal(file: "frame2.as")),
+        ShowFrame,
+        // Frame 3
+        PlaceObject2(depth: 16624, character: 2, name: "c14b"),
+        PlaceObject2(depth: 16634, move: true, matrix: (translate_x: 7.0, translate_y: 3.0)),
+        DoAction(Rascal(file: "frame3.as")),
+        ShowFrame,
+        End,
+    ],
+)
