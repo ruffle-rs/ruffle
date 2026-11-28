@@ -38,6 +38,7 @@ mod loader_display;
 mod morph_shape;
 mod movie_clip;
 mod stage;
+mod sync_transform_matrix;
 mod text;
 mod text_line;
 mod video;
@@ -422,6 +423,20 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.set_scale_rotation_cached(false);
     }
 
+    pub fn update_with_swf_matrix(&self, matrix: swf::Matrix) {
+        let (degrees, scale_x, scale_y, skew, matrix) =
+            sync_transform_matrix::from_swf_matrix(matrix);
+
+        self.rotation.set(degrees);
+        self.scale_x.set(scale_x);
+        self.scale_y.set(scale_y);
+        self.skew.set(skew);
+        self.matrix.set(matrix);
+
+        // We did some tweaks inside from_swf_matrix. Please do not recalculate.
+        self.set_scale_rotation_cached(true);
+    }
+
     pub fn color_transform(&self) -> ColorTransform {
         self.color_transform.get()
     }
@@ -484,34 +499,15 @@ impl<'gc> DisplayObjectBase<'gc> {
     /// `_rotation` is accessed.
     fn cache_scale_rotation(&self) {
         if !self.scale_rotation_cached() {
-            let Matrix { a, b, c, d, .. } = self.matrix.get();
-            let a = f64::from(a);
-            let b = f64::from(b);
-            let c = f64::from(c);
-            let d = f64::from(d);
+            let matrix = self.matrix.get();
 
-            // If this object's transform matrix is:
-            // [[a c tx]
-            //  [b d ty]]
-            // After transformation, the X-axis and Y-axis will turn into the column vectors x' = <a, b> and y' = <c, d>.
-            // We derive the scale, rotation, and skew values from these transformed axes.
-            // The skew value is not exposed by ActionScript, but is remembered internally.
-            // xscale = len(x')
-            // yscale = len(y')
-            // rotation = atan2(b, a)  (the rotation of x' from the normal x-axis).
-            // skew = atan2(-c, d) - atan2(b, a)  (the signed difference between y' and x' rotation)
+            let (rotation, scale_x, scale_y, skew) =
+                sync_transform_matrix::props_from_matrix(matrix);
 
-            // This can produce some surprising results due to the overlap between flipping/rotation/skewing.
-            // For example, in Flash, using Modify->Transform->Flip Horizontal and then tracing _xscale, _yscale, and _rotation
-            // will output 100, 100, and 180. (a horizontal flip could also be a 180 degree skew followed by 180 degree rotation!)
-            let rotation_x = f64::atan2(b, a);
-            let rotation_y = f64::atan2(-c, d);
-            let scale_x = f64::sqrt(a * a + b * b);
-            let scale_y = f64::sqrt(c * c + d * d);
-            self.rotation.set(Degrees::from_radians(rotation_x));
-            self.scale_x.set(Percent::from_unit(scale_x));
-            self.scale_y.set(Percent::from_unit(scale_y));
-            self.skew.set(rotation_y - rotation_x);
+            self.rotation.set(rotation);
+            self.scale_x.set(scale_x);
+            self.scale_y.set(scale_y);
+            self.skew.set(skew);
         }
     }
 
@@ -526,31 +522,27 @@ impl<'gc> DisplayObjectBase<'gc> {
         let changed = self.rotation.get() != degrees;
         self.rotation.set(degrees);
 
-        // FIXME - this isn't quite correct. In Flash player,
-        // trying to set rotation to NaN does nothing if the current
-        // matrix 'b' and 'd' terms are both zero. However, if one
-        // of those terms is non-zero, then the entire matrix gets
-        // modified in a way that depends on its starting values.
-        // I haven't been able to figure out how to reproduce those
-        // values, so for now, we never modify the matrix if the
-        // rotation is NaN. Hopefully, there are no SWFs depending
-        // on the weird behavior when b or d is non-zero.
-        if degrees.into_radians().is_nan() {
+        if !changed {
             return changed;
         }
 
-        let skew = self.skew.get();
-        let cos_x = f64::cos(degrees.into_radians());
-        let sin_x = f64::sin(degrees.into_radians());
-        let cos_y = f64::cos(degrees.into_radians() + skew);
-        let sin_y = f64::sin(degrees.into_radians() + skew);
-        let scale_x = self.scale_x.get().unit();
-        let scale_y = self.scale_y.get().unit();
         let mut matrix = self.matrix.get();
-        matrix.a = (scale_x * cos_x) as f32;
-        matrix.b = (scale_x * sin_x) as f32;
-        matrix.c = (scale_y * -sin_y) as f32;
-        matrix.d = (scale_y * cos_y) as f32;
+
+        if sync_transform_matrix::to_skip_update(degrees.into_radians(), &matrix) {
+            return changed;
+        }
+
+        let computed_matrix = sync_transform_matrix::matrix_from_props(
+            degrees,
+            self.scale_x.get(),
+            self.scale_y.get(),
+            self.skew.get(),
+        );
+
+        matrix.a = computed_matrix.a;
+        matrix.b = computed_matrix.b;
+        matrix.c = computed_matrix.c;
+        matrix.d = computed_matrix.d;
         self.matrix.set(matrix);
 
         changed
@@ -561,31 +553,33 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.scale_x.get()
     }
 
-    fn set_scale_x(&self, mut value: Percent) -> bool {
+    fn set_scale_x(&self, value: Percent) -> bool {
         let changed = self.scale_x.get() != value;
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
         self.scale_x.set(value);
 
-        // Note - in order to match Flash's behavior, the 'scale_x' field is set to NaN
-        // (which gets reported back to ActionScript), but we treat it as 0 for
-        // the purposes of updating the matrix
-        if value.percent().is_nan() {
-            value = 0.0.into();
+        if !changed {
+            return changed;
         }
 
-        // Similarly, a rotation of `NaN` can be reported to ActionScript, but we
-        // treat it as 0.0 when calculating the matrix
-        let mut rot = self.rotation.get().into_radians();
-        if rot.is_nan() {
-            rot = 0.0;
-        }
-
-        let cos = f64::cos(rot);
-        let sin = f64::sin(rot);
         let mut matrix = self.matrix.get();
-        matrix.a = (cos * value.unit()) as f32;
-        matrix.b = (sin * value.unit()) as f32;
+
+        if sync_transform_matrix::to_skip_update(value.unit(), &matrix) {
+            return changed;
+        }
+
+        let computed_matrix = sync_transform_matrix::matrix_from_props(
+            self.rotation.get(),
+            value,
+            self.scale_y.get(),
+            self.skew.get(),
+        );
+
+        matrix.a = computed_matrix.a;
+        matrix.b = computed_matrix.b;
+        matrix.c = computed_matrix.c;
+        matrix.d = computed_matrix.d;
         self.matrix.set(matrix);
 
         changed
@@ -596,32 +590,31 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.scale_y.get()
     }
 
-    fn set_scale_y(&self, mut value: Percent) -> bool {
+    fn set_scale_y(&self, value: Percent) -> bool {
         let changed = self.scale_y.get() != value;
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
         self.scale_y.set(value);
 
-        // Note - in order to match Flash's behavior, the 'scale_y' field is set to NaN
-        // (which gets reported back to ActionScript), but we treat it as 0 for
-        // the purposes of updating the matrix
-        if value.percent().is_nan() {
-            value = 0.0.into();
+        if !changed {
+            return changed;
         }
 
-        // Similarly, a rotation of `NaN` can be reported to ActionScript, but we
-        // treat it as 0.0 when calculating the matrix
-        let mut rot = self.rotation.get().into_radians();
-        if rot.is_nan() {
-            rot = 0.0;
-        }
+        // Surprisingly, unlike scaleX or rotation setter, the scaleY setter
+        // does not appear to have an early-return when updating to NaN.
 
-        let skew = self.skew.get();
-        let cos = f64::cos(rot + skew);
-        let sin = f64::sin(rot + skew);
+        let computed_matrix = sync_transform_matrix::matrix_from_props(
+            self.rotation.get(),
+            self.scale_x.get(),
+            value,
+            self.skew.get(),
+        );
+
         let mut matrix = self.matrix.get();
-        matrix.c = (-sin * value.unit()) as f32;
-        matrix.d = (cos * value.unit()) as f32;
+        matrix.a = computed_matrix.a;
+        matrix.b = computed_matrix.b;
+        matrix.c = computed_matrix.c;
+        matrix.d = computed_matrix.d;
         self.matrix.set(matrix);
 
         changed
@@ -2554,7 +2547,7 @@ pub trait TDisplayObject<'gc>:
         // PlaceObject tags only apply if this object has not been dynamically moved by AS code.
         if !self.transformed_by_script() {
             if let Some(matrix) = place_object.matrix {
-                self.set_matrix(matrix.into());
+                self.base().update_with_swf_matrix(matrix);
                 if let Some(parent) = self.parent() {
                     // Self-transform changes are automatically handled,
                     // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty

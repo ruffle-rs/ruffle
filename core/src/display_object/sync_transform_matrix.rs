@@ -1,0 +1,154 @@
+// Synchronization/computation between matrix and transform (i.e. scale/rotation/skew).
+
+use crate::types::{Degrees, Percent};
+use ruffle_render::matrix::Matrix;
+
+pub(crate) fn props_from_matrix(matrix: Matrix) -> (Degrees, Percent, Percent, f64) {
+    let atan2 = |x: f64, y: f64| {
+        let nan_to_neginf = |x: f64| if x.is_nan() { f64::NEG_INFINITY } else { x };
+
+        let x = nan_to_neginf(x);
+        let y = nan_to_neginf(y);
+        if (x, y) == (0.0, 0.0) {
+            // different value from Number.atan2 or Math.atan2.
+            return std::f64::consts::PI / 2.0;
+        }
+        f64::atan2(x, y)
+    };
+
+    let Matrix { a, b, c, d, .. } = matrix;
+    let a = f64::from(a);
+    let b = f64::from(b);
+    let c = f64::from(c);
+    let d = f64::from(d);
+
+    // If this object's transform matrix is:
+    // [[a c tx]
+    //  [b d ty]]
+    // After transformation, the X-axis and Y-axis will turn into the column vectors x' = <a, b> and y' = <c, d>.
+    // We derive the scale, rotation, and skew values from these transformed axes.
+    // The skew value is not exposed by ActionScript, but is remembered internally.
+    // xscale = len(x')
+    // yscale = len(y')
+    // rotation = atan2(b, a)  (the rotation of x' from the normal x-axis).
+    // skew = atan2(-c, d) - atan2(b, a)  (the signed difference between y' and x' rotation)
+
+    // This can produce some surprising results due to the overlap between flipping/rotation/skewing.
+    // For example, in Flash, using Modify->Transform->Flip Horizontal and then tracing _xscale, _yscale, and _rotation
+    // will output 100, 100, and 180. (a horizontal flip could also be a 180 degree skew followed by 180 degree rotation!)
+    if (a, b, c, d) == (-1.0, 0.0, 0.0, 1.0) {
+        // early return for this specific case.
+        // This is the only confirmed case where scale_x is negative.
+        let scale_x = Percent::from_unit(-1.0);
+        let scale_y = Percent::from_unit(1.0);
+        let rotation = Degrees::from(0.0);
+        let skew = 0.0;
+        return (rotation, scale_x, scale_y, skew);
+    }
+
+    let ysignum = if (a * d) < (b * c) { -1.0 } else { 1.0 };
+
+    let scale_x = f64::sqrt(a * a + b * b);
+    let scale_y = ysignum * f64::sqrt(c * c + d * d);
+
+    let rotation = if (nan_to_zero(a), b, c) == (0.0, 0.0, 0.0) && d > 0.0 {
+        0.0
+    } else {
+        f64::atan2(b, a)
+    };
+    let skew = {
+        let rotation_y = if (b, c, nan_to_zero(d)) == (0.0, 0.0, 0.0) && a > 0.0 {
+            0.0
+        } else {
+            // `ysignum` multiplication is required here for pi difference.
+            atan2(-ysignum * c, ysignum * d)
+        };
+        let rotation_x = if (nan_to_zero(a), b, c) == (0.0, 0.0, 0.0) && d > 0.0 {
+            0.0
+        } else {
+            atan2(b, a)
+        };
+        (rotation_y - rotation_x).rem_euclid(2.0 * std::f64::consts::PI)
+    };
+
+    let scale_x = Percent::from_unit(scale_x);
+    let scale_y = Percent::from_unit(scale_y);
+    let rotation = Degrees::from_radians(rotation);
+
+    (rotation, scale_x, scale_y, skew)
+}
+
+pub(crate) fn matrix_from_props(
+    degrees: Degrees,
+    scale_x: Percent,
+    scale_y: Percent,
+    skew: f64,
+) -> Matrix {
+    // Note - in order to match Flash's behavior, the 'scale_x'/`scale_y` field is set to NaN
+    // (which gets reported back to ActionScript), but we treat it as 0 for the purposes of
+    // updating the matrix
+    let scale_x = nan_to_zero(scale_x.unit());
+    let scale_y = nan_to_zero(scale_y.unit());
+
+    // Similarly, a rotation of `NaN` can be reported to ActionScript, but we
+    // treat it as 0.0 when calculating the matrix
+    let degrees = nan_to_zero(degrees.into_radians());
+
+    let (sin_x, cos_x) = degrees.sin_cos();
+    let (sin_y, cos_y) = (degrees + skew).sin_cos();
+
+    Matrix {
+        a: (scale_x * cos_x) as f32,
+        b: (scale_x * sin_x) as f32,
+        c: (scale_y * -sin_y) as f32,
+        d: (scale_y * cos_y) as f32,
+        ..Default::default()
+    }
+}
+
+/// from_swf_matrix includes tweaks specific to SWF PlaceObject family tags.
+pub(crate) fn from_swf_matrix(swf_matrix: swf::Matrix) -> (Degrees, Percent, Percent, f64, Matrix) {
+    let matrix: Matrix = swf_matrix.into();
+    let (mut rotation, mut scale_x, mut scale_y, mut skew) = props_from_matrix(matrix);
+
+    let negate_scale_x = matrix.a < 0.0 && (matrix.b, matrix.c) == (0.0, 0.0) && matrix.d > 0.0;
+    let negate_scale_y = !negate_scale_x && matrix.a * matrix.d < matrix.b * matrix.c;
+
+    if negate_scale_x {
+        scale_x = Percent::from(-scale_x.percent());
+        rotation = Degrees::from_radians(std::f64::consts::PI);
+    }
+
+    // invariant: matrix.
+    // - `scale_y *= -1` reverses the sign of `c` and `d`.
+    // - `skew += pi` also reverses the sign of `c` and `d`.
+    if negate_scale_y {
+        scale_y = Percent::from(-scale_y.percent());
+        skew = (skew + std::f64::consts::PI).rem_euclid(2.0 * std::f64::consts::PI);
+    }
+
+    // atan2(0, 0) is generally arbitrary.
+    if (matrix.a, matrix.b) == (0.0, 0.0) {
+        rotation = Degrees::from_radians(std::f64::consts::PI / 2.0);
+    }
+
+    // TODO: Refactoring
+    // I think it's possible to simplify/merge those logics to props_from_matrix.
+    if (matrix.b, matrix.c, matrix.d) == (0.0, 0.0, 0.0) && matrix.a > 0.0 {
+        skew = (std::f32::consts::PI / 2.0 - f32::atan2(matrix.b, matrix.a)) as f64;
+    }
+    if (matrix.a, matrix.b, matrix.c) == (0.0, 0.0, 0.0) && matrix.d > 0.0 {
+        skew = (f32::atan2(-matrix.c, matrix.d) - std::f32::consts::PI / 2.0) as f64;
+    }
+
+    (rotation, scale_x, scale_y, skew, matrix)
+}
+
+pub(crate) fn to_skip_update(value: f64, matrix: &Matrix) -> bool {
+    value.is_nan() && matrix.a == 0.0 && matrix.b == 0.0 && matrix.c == 0.0 && matrix.d >= 0.0
+}
+
+#[inline]
+fn nan_to_zero(val: f64) -> f64 {
+    if val.is_nan() { 0.0 } else { val }
+}
